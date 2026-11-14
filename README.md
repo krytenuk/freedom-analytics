@@ -44,21 +44,80 @@ Administrators manage sites (with the tracking code) and users. Viewers see only
 
 ## Getting started with Docker
 
-```bash
-cp .env.dist .env                                    # set the passwords
-cp config/autoload/local.php.dist config/autoload/local.php   # the same database password, and the secrets
-cp config/development.config.php.dist config/development.config.php   # development mode, optional
-docker compose up -d --build
-composer install
-bin/doctrine migrations:migrate
-vendor/bin/laminas analytics:user --email=you@example.com --name="Your Name" --role=admin
-```
+1. **Set the database credentials.** Copy `.env.dist` to `.env` and set `MARIADB_DATABASE`, `MARIADB_USER`,
+   `MARIADB_PASSWORD` and `MARIADB_ROOT_PASSWORD`:
+
+   ```bash
+   cp .env.dist .env
+   ```
+
+2. **Point the application at the same database.** Copy `local.php.dist`, then set `dbname`, `user` and
+   `password` to the `MARIADB_DATABASE`, `MARIADB_USER` and `MARIADB_PASSWORD` from `.env`. Also replace each
+   `your_secret` with a random value, such as from `php -r 'echo bin2hex(random_bytes(32));'`:
+
+   ```bash
+   cp config/autoload/local.php.dist config/autoload/local.php
+   ```
+
+   Leave `host` and `port` as they are (see [Database host](#database-host) below).
+
+3. **Start the containers, install, and create the tables and the first administrator:**
+
+   ```bash
+   cp config/development.config.php.dist config/development.config.php   # development mode, optional
+   docker compose up -d --build
+   composer install
+   bin/doctrine migrations:migrate
+   vendor/bin/laminas analytics:user --email=you@example.com --name="Your Name" --role=admin
+   ```
 
 Then open https://localhost:1453 (the certificate is self-signed), log in, and add a site. The session cookie is
 secure only, so use HTTPS locally too.
 
-Commands run from the host reach the database on port 13307. Inside the container, `docker compose` sets `DB_HOST`
-and `DB_PORT` for `local.php`.
+### Database host
+
+The database is reached at a different address depending on where PHP runs, so `local.php` reads it from the
+`DB_HOST` and `DB_PORT` environment variables:
+
+```php
+'host' => getenv('DB_HOST') ?: '127.0.0.1',
+'port' => (int) (getenv('DB_PORT') ?: 13307),
+```
+
+| Where PHP runs | `DB_HOST` / `DB_PORT` | Reaches the database at |
+|---|---|---|
+| The `app` container (the website) | `db` / `3306`, set in `docker-compose.yml` | The `db` service on the Docker network |
+| The host (`bin/doctrine`, `vendor/bin/laminas`, `composer test`) | Not set | `127.0.0.1:13307`, the port `docker-compose.yml` publishes |
+
+So the same `local.php` works in both places with no changes. Commands can also be run inside the container, where
+`DB_HOST` is already set:
+
+```bash
+docker exec freedom-analytics bin/doctrine migrations:status
+```
+
+Outside Docker, such as on a live server, set `host` and `port` in `local.php` directly, or set `DB_HOST` and
+`DB_PORT` in the web server's environment.
+
+### Changing the database credentials later
+
+MariaDB only reads the `MARIADB_*` settings in `.env` when its data volume is first created. Changing them afterwards
+does nothing to the existing database, and the application gets "Access denied" once `local.php` is updated to match.
+Either change the database to match, logged in as root with the root password the volume was created with. For a new
+password:
+
+```bash
+docker exec -it freedom-analytics-db mariadb -uroot -p \
+    -e "ALTER USER 'your_db_user'@'%' IDENTIFIED BY 'the-new-password';"
+```
+
+or, if the data does not matter, delete the volume so it is created again from `.env`. **This erases all the
+analytics data:**
+
+```bash
+docker compose down -v && docker compose up -d
+bin/doctrine migrations:migrate
+```
 
 ## Tracking a site
 
