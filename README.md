@@ -164,3 +164,27 @@ one, countries are not recorded), a trusted proxy header and data retention.
 composer test       # PHPUnit
 composer cs-check   # Laminas coding standard
 ```
+
+## Licence
+
+Copyright (C) 2026 Freedom Web Services
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the [GNU General Public License](LICENSE) for
+more details.
+
+### Third-party files
+
+These are included under their own licences, not the GPL:
+
+- The admin interface's design, `public/assets/admin/css/style.css` and `public/assets/admin/js/main.js` are from the
+  [NiceAdmin template](https://bootstrapmade.com/nice-admin-bootstrap-admin-html-template/) by BootstrapMade, under the
+  [BootstrapMade licence](https://bootstrapmade.com/license/), which requires the "Designed by BootstrapMade" credit
+  in the footer to stay.
+- [Bootstrap](https://getbootstrap.com/), [Bootstrap Icons](https://icons.getbootstrap.com/) and
+  [ApexCharts](https://apexcharts.com/), in `public/assets/admin/vendor`, under the MIT licence.
+- The PHP packages installed by Composer, each under the licence in its `composer.json`.

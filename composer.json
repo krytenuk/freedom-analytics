@@ -2,7 +2,7 @@
     "name": "freedom/analytics",
     "description": "Self-hosted web analytics, modelled on Open Web Analytics, built with Mezzio and Doctrine ORM",
     "type": "project",
-    "license": "proprietary",
+    "license": "GPL-3.0-or-later",
     "config": {
         "sort-packages": true,
         "allow-plugins": {
