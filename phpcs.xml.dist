@@ -18,6 +18,9 @@
     <exclude-pattern>config/config.php</exclude-pattern>
     <exclude-pattern>config/routes.php</exclude-pattern>
     <exclude-pattern>src/*/src/Migrations/*</exclude-pattern>
+    <!-- Each machine's own settings, which are not committed -->
+    <exclude-pattern>config/autoload/*local.php</exclude-pattern>
+    <exclude-pattern>config/development.config.php</exclude-pattern>
 
     <!-- Include all rules from the Laminas Coding Standard -->
     <rule ref="LaminasCodingStandard">

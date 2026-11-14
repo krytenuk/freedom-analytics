@@ -100,7 +100,12 @@ class SiteModel
     /**
      * How much the site has collected, and when it last heard from it
      *
-     * @return array{visits: int, pageviews: int, firstVisit: DateTimeImmutable|null, lastActivity: DateTimeImmutable|null}
+     * @return array{
+     *     visits: int,
+     *     pageviews: int,
+     *     firstVisit: DateTimeImmutable|null,
+     *     lastActivity: DateTimeImmutable|null
+     * }
      */
     public function stats(Site $site): array
     {

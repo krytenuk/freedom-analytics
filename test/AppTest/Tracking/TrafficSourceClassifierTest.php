@@ -23,7 +23,9 @@ final class TrafficSourceClassifierTest extends TestCase
 
     public function testNoReferrerIsDirect(): void
     {
-        self::assertSame(Visit::MEDIUM_DIRECT, $this->classifier->classify($this->site, 'https://www.example.com/', null)->medium);
+        $source = $this->classifier->classify($this->site, 'https://www.example.com/', null);
+
+        self::assertSame(Visit::MEDIUM_DIRECT, $source->medium);
     }
 
     public function testTheSitesOwnPagesAreDirect(): void

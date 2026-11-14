@@ -134,7 +134,11 @@ class ReportModel
         'os'                    => ['source' => self::SOURCE_VISITS, 'expr' => 'v.os'],
         'device_type'           => ['source' => self::SOURCE_VISITS, 'expr' => 'v.device_type'],
         'screen_resolution'     => ['source' => self::SOURCE_VISITS, 'expr' => 'v.screen_resolution'],
-        'visit_number'          => ['source' => self::SOURCE_VISITS, 'expr' => 'v.visit_number', 'buckets' => 'loyalty'],
+        'visit_number'          => [
+            'source'  => self::SOURCE_VISITS,
+            'expr'    => 'v.visit_number',
+            'buckets' => 'loyalty',
+        ],
         'days_since_last_visit' => [
             'source'  => self::SOURCE_VISITS,
             'expr'    => 'v.days_since_last_visit',
@@ -249,7 +253,14 @@ class ReportModel
     /**
      * Visits, visitors, page views and bounce rate for each day of the period, with days that had none
      *
-     * @return list<array{date: string, visits: int, visitors: int, pageviews: int, new_visits: int, bounce_rate: float}>
+     * @return list<array{
+     *     date: string,
+     *     visits: int,
+     *     visitors: int,
+     *     pageviews: int,
+     *     new_visits: int,
+     *     bounce_rate: float
+     * }>
      */
     public function trend(Site $site, Period $period): array
     {

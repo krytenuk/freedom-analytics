@@ -158,7 +158,9 @@ final class SiteForm extends Form implements InputFilterProviderInterface
                     // Accept a pasted address, keeping only the host name and any port
                     [
                         'name'    => \Laminas\Filter\Callback::class,
-                        'options' => ['callback' => static fn (mixed $value): string => self::hostOnly((string) $value)],
+                        'options' => [
+                            'callback' => static fn (mixed $value): string => self::hostOnly((string) $value),
+                        ],
                     ],
                 ],
                 'validators' => [

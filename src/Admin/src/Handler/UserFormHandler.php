@@ -71,7 +71,10 @@ final readonly class UserFormHandler implements RequestHandlerInterface
                 'email'  => $user->getEmail(),
                 'role'   => $user->getRole(),
                 'active' => $user->isActive() ? '1' : '0',
-                'sites'  => array_map(static fn (Site $site): string => (string) $site->getId(), $user->getSites()->getValues()),
+                'sites'  => array_map(
+                    static fn (Site $site): string => (string) $site->getId(),
+                    $user->getSites()->getValues()
+                ),
             ]);
 
             return $this->render($request, $form, $user);
