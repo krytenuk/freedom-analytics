@@ -1,0 +1,77 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var list<App\Entity\User> $users
+ * @var string|null $notice
+ * @var App\Entity\User $currentUser
+ */
+
+$this->layout()->setVariables(['title' => 'Users', 'activeNav' => 'users']);
+?>
+<?= $this->partial('admin::partial/page-title', ['heading' => 'Users']) ?>
+
+<section class="section">
+    <div class="card overflow-auto">
+        <div class="card-body">
+            <?php if ($notice) : ?>
+                <div class="alert alert-success mt-3" role="status"><?= $this->escapeHtml($notice) ?></div>
+            <?php endif ?>
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="card-title">Users <span>| <?= count($users) ?></span></h5>
+                <a class="btn btn-primary btn-sm" href="<?= $this->url('user-add') ?>">
+                    <i class="bi bi-person-plus me-1"></i> Add User
+                </a>
+            </div>
+
+            <table class="table table-borderless table-hover align-middle">
+                <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email Address</th>
+                    <th scope="col">Role</th>
+                    <th scope="col">Sites</th>
+                    <th scope="col">Status</th>
+                    <th scope="col"><span class="visually-hidden">Actions</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($users as $user) : ?>
+                    <tr>
+                        <td>
+                            <?= $this->escapeHtml($user->getName()) ?>
+                            <?php if ($user === $currentUser) : ?>
+                                <span class="badge bg-body-secondary text-body-secondary">You</span>
+                            <?php endif ?>
+                        </td>
+                        <td><?= $this->escapeHtml($user->getEmail()) ?></td>
+                        <td><?= $this->escapeHtml($user->getRoleLabel()) ?></td>
+                        <td>
+                            <?php if ($user->isAdmin()) : ?>
+                                <span class="text-body-secondary">All</span>
+                            <?php else : ?>
+                                <?= $this->escapeHtml(implode(', ', array_map(
+                                    static fn (App\Entity\Site $site): string => $site->getName(),
+                                    $user->getSites()->getValues()
+                                )) ?: 'None') ?>
+                            <?php endif ?>
+                        </td>
+                        <td>
+                            <?php if ($user->isActive()) : ?>
+                                <span class="badge bg-success-subtle text-success-emphasis"><i class="bi bi-check-circle me-1"></i>Active</span>
+                            <?php else : ?>
+                                <span class="badge bg-secondary-subtle text-body-secondary"><i class="bi bi-slash-circle me-1"></i>Disabled</span>
+                            <?php endif ?>
+                        </td>
+                        <td class="text-end">
+                            <a class="btn btn-outline-primary btn-sm" href="<?= $this->url('user-edit', ['id' => $user->getId()]) ?>">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                        </td>
+                    </tr>
+                <?php endforeach ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>

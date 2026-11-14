@@ -1,0 +1,79 @@
+{
+    "name": "freedom/analytics",
+    "description": "Self-hosted web analytics, modelled on Open Web Analytics, built with Mezzio and Doctrine ORM",
+    "type": "project",
+    "license": "proprietary",
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "laminas/laminas-component-installer": false
+        },
+        "platform": {
+            "php": "8.2.99"
+        }
+    },
+    "require": {
+        "php": "~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0",
+        "doctrine/migrations": "^3.9",
+        "doctrine/orm": "^2.20",
+        "endroid/qr-code": "^6.0",
+        "krytenuk/doctrine-auth": "dev-v2.x-dev",
+        "krytenuk/doctrine-auth-app-2fa": "dev-main",
+        "laminas/laminas-cli": "^1.15",
+        "laminas/laminas-config-aggregator": "^1.18",
+        "laminas/laminas-diactoros": "^3.8.0",
+        "laminas/laminas-form": "^3.21",
+        "laminas/laminas-i18n": "^2.29",
+        "laminas/laminas-inputfilter": "^2.35",
+        "laminas/laminas-servicemanager": "^3.22",
+        "laminas/laminas-stdlib": "^3.21",
+        "mezzio/mezzio": "^3.23.1",
+        "mezzio/mezzio-authentication": "^1.11",
+        "mezzio/mezzio-csrf": "^1.11",
+        "mezzio/mezzio-fastroute": "^3.11.0",
+        "mezzio/mezzio-helpers": "^5.20",
+        "mezzio/mezzio-laminasviewrenderer": "^2.19",
+        "mezzio/mezzio-session-ext": "^1.21",
+        "roave/psr-container-doctrine": "^4.2",
+        "symfony/cache": "^7.1"
+    },
+    "require-dev": {
+        "filp/whoops": "^2.15.4",
+        "laminas/laminas-coding-standard": "^3.1.0",
+        "laminas/laminas-development-mode": "^3.14.0",
+        "phpunit/phpunit": "^11.5.42"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/App/src/",
+            "Admin\\": "src/Admin/src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AppTest\\": "test/AppTest/",
+            "AdminTest\\": "test/AdminTest/"
+        }
+    },
+    "scripts": {
+        "post-install-cmd": "@clear-config-cache",
+        "post-update-cmd": "@clear-config-cache",
+        "development-disable": "laminas-development-mode disable",
+        "development-enable": "laminas-development-mode enable",
+        "development-status": "laminas-development-mode status",
+        "clear-config-cache": "php bin/clear-config-cache.php",
+        "cs-check": "phpcs",
+        "cs-fix": "phpcbf",
+        "serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "php -S 0.0.0.0:8080 -t public/"
+        ],
+        "test": "phpunit --colors=always"
+    },
+    "repositories": [{
+        "name": "doctrine-auth-app-2fa",
+        "type": "vcs",
+        "url": "https://github.com/krytenuk/doctrine-auth-app-2fa"
+    }]
+}

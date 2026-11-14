@@ -1,0 +1,42 @@
+<?php
+/**
+ * A headline number, with how it changed from the period before
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var string $label
+ * @var string $icon
+ * @var int|float $value
+ * @var int|float|null $previous
+ * @var string $format number, decimal, percent or duration
+ * @var bool $lowerIsBetter Such as the bounce rate, so a fall is shown as good
+ */
+
+use Admin\View\Format;
+
+$change        = isset($previous) ? Format::change($value, $previous) : null;
+$lowerIsBetter = $lowerIsBetter ?? false;
+$good          = $change !== null && ($lowerIsBetter ? $change < 0 : $change > 0);
+?>
+<div class="card info-card kpi-card h-100 mb-0">
+    <div class="card-body">
+        <h5 class="card-title d-flex align-items-center gap-2">
+            <i class="bi <?= $this->escapeHtmlAttr($icon) ?>" aria-hidden="true"></i>
+            <?= $this->escapeHtml($label) ?>
+        </h5>
+        <div class="kpi-value"><?= $this->escapeHtml(Format::metric($value, $format)) ?></div>
+        <div class="small text-body-secondary">
+            <?php if ($change !== null && abs($change) >= 0.0005) : ?>
+                <span class="fw-bold <?= $good ? 'text-success' : 'text-danger' ?>">
+                    <i class="bi <?= $change > 0 ? 'bi-arrow-up' : 'bi-arrow-down' ?>" aria-hidden="true"></i>
+                    <span class="visually-hidden"><?= $change > 0 ? 'Up' : 'Down' ?></span>
+                    <?= Format::percent(abs($change), 0) ?>
+                </span>
+                vs previous period
+            <?php elseif ($change !== null) : ?>
+                No change on previous period
+            <?php elseif (isset($previous)) : ?>
+                No data for previous period
+            <?php endif ?>
+        </div>
+    </div>
+</div>

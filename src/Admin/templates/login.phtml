@@ -1,0 +1,46 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var Admin\Forms\LoginForm $form
+ * @var string|null $message
+ * @var string|null $loginRequiredMessage
+ */
+
+$this->layout()->setVariables(['title' => 'Log In']);
+
+$form
+    ->prepare()
+    ->setAttribute('action', $this->url('login'))
+    ->setAttribute('method', 'post');
+
+$errorAttributes = ['class' => 'list-unstyled text-danger small mt-1 mb-0'];
+?>
+<div class="pt-4 pb-2">
+    <h5 class="card-title text-center pb-0 fs-4">Log In</h5>
+    <p class="text-center small">Enter your email address and password to see your reports</p>
+</div>
+
+<?php if ($loginRequiredMessage) : ?>
+    <div class="alert alert-warning" role="alert"><?= $this->escapeHtml($loginRequiredMessage) ?></div>
+<?php endif ?>
+<?php if ($message) : ?>
+    <div class="alert alert-danger" role="alert"><?= $this->escapeHtml($message) ?></div>
+<?php endif ?>
+
+<?= $this->form()->openTag($form) ?>
+    <div class="form-floating">
+        <?= $this->formText($form->get('email')) ?>
+        <?= $this->formLabel($form->get('email')) ?>
+    </div>
+    <?= $this->formElementErrors()->render($form->get('email'), $errorAttributes) ?>
+    <div class="form-floating mt-3">
+        <?= $this->formPassword($form->get('password')) ?>
+        <?= $this->formLabel($form->get('password')) ?>
+    </div>
+    <?= $this->formElementErrors()->render($form->get('password'), $errorAttributes) ?>
+    <?= $this->formElementErrors()->render($form->get('csrf'), $errorAttributes) ?>
+    <div class="d-grid mt-3 mb-2">
+        <?= $this->formHidden($form->get('csrf')) ?>
+        <?= $this->formSubmit($form->get('login')) ?>
+    </div>
+<?= $this->form()->closeTag() ?>

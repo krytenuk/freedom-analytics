@@ -1,0 +1,95 @@
+/* Additions to the NiceAdmin theme for the report pages */
+
+.kpi-card .card-icon {
+    color: #2a78d6;
+    background: rgba(42, 120, 214, 0.12);
+}
+
+.kpi-card h6 {
+    font-size: 24px;
+}
+
+[data-bs-theme="dark"] .kpi-card .card-icon {
+    color: #3987e5;
+    background: rgba(57, 135, 229, 0.18);
+}
+
+/* Each row's share of the report, under its label */
+.share-bar {
+    height: 4px;
+    margin-top: 4px;
+    border-radius: 2px;
+    background: var(--bs-secondary-bg);
+    max-width: 24rem;
+}
+
+.share-bar span {
+    display: block;
+    height: 100%;
+    border-radius: 2px;
+    background: #2a78d6;
+}
+
+[data-bs-theme="dark"] .share-bar span {
+    background: #3987e5;
+}
+
+.report-table .dimension-cell {
+    min-width: 12rem;
+}
+
+.analytics-chart {
+    width: 100%;
+}
+
+.period-form .form-control-sm[type="date"] {
+    width: 9.5rem;
+}
+
+.code-block {
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 6px;
+    padding: 1rem 5.5rem 1rem 1rem;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.copy-button {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+}
+
+/* The click stream: wider time column than NiceAdmin's activity list */
+.activity .activity-item .activite-label {
+    min-width: 72px;
+}
+
+.activity .activity-item .activity-content {
+    min-width: 0;
+}
+
+/* Two-column checkbox list of sites on the user form */
+#sites-list label,
+form[name="user"] fieldset label {
+    display: block;
+    margin-bottom: 0.35rem;
+}
+
+/* Bootstrap's display utilities would otherwise override the hidden attribute */
+[hidden] {
+    display: none !important;
+}
+
+.kpi-card .card-title {
+    padding-bottom: 8px;
+}
+
+.kpi-card .kpi-value {
+    font-size: 26px;
+    font-weight: 700;
+    white-space: nowrap;
+    color: var(--bs-emphasis-color);
+}

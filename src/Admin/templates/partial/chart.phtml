@@ -1,0 +1,20 @@
+<?php
+/**
+ * A chart drawn by public/assets/js/analytics.js. The data is in a JSON script tag, read once the page has loaded.
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var string $id
+ * @var string $type trend, donut or bar
+ * @var array<string, mixed> $data For trend: {categories: list<string>, series: list<{name, data}>, format}. For donut
+ *     and bar: {labels: list<string>, values: list<number>, name, format}
+ * @var int $height
+ * @var string $label What the chart shows, for screen readers, which get the table beside it instead
+ */
+?>
+<div class="analytics-chart" id="<?= $this->escapeHtmlAttr($id) ?>" data-chart="<?= $this->escapeHtmlAttr($type) ?>"
+     style="min-height: <?= (int) ($height ?? 300) ?>px" role="img" aria-label="<?= $this->escapeHtmlAttr($label) ?>">
+    <script type="application/json"><?= json_encode(
+        $data + ['height' => (int) ($height ?? 300)],
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR
+    ) ?></script>
+</div>

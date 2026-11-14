@@ -1,0 +1,89 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var Admin\Report\ReportContext $context
+ * @var array<string, int|float> $kpis
+ * @var array<string, int|float> $previousKpis
+ * @var list<array<string, mixed>> $trend
+ * @var array<string, mixed> $browsers
+ * @var array<string, mixed> $systems
+ * @var array<string, mixed> $devices
+ * @var array<string, mixed> $countries
+ * @var array<string, mixed> $loyalty
+ */
+
+use Admin\View\ChartData;
+
+$this->layout()->setVariables(['title' => 'Visitors', 'activeNav' => 'visitors']);
+
+$kpi = fn (string $label, string $icon, string $key, string $format): string => $this->partial('admin::partial/kpi', [
+    'label'    => $label,
+    'icon'     => $icon,
+    'value'    => $kpis[$key],
+    'previous' => $previousKpis[$key],
+    'format'   => $format,
+]);
+
+$card = fn (string $title, string $report, array $result, string $label): string => sprintf(
+    '<div class="card"><div class="card-body"><h5 class="card-title">%s</h5>%s<div class="text-end mt-2">'
+    . '<a class="small" href="%s">View full report <i class="bi bi-arrow-right"></i></a></div></div></div>',
+    $this->escapeHtml($title),
+    $this->partial('admin::partial/dimension-table', ['result' => $result, 'label' => $label, 'columns' => ['visits']]),
+    $this->url('report', ['id' => $report])
+);
+?>
+<?= $this->partial('admin::partial/report-header', ['heading' => 'Visitors', 'context' => $context]) ?>
+
+<section class="section dashboard">
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-xl-3"><?= $kpi('Unique Visitors', 'bi-people', 'visitors', 'number') ?></div>
+        <div class="col-6 col-xl-3"><?= $kpi('Visits', 'bi-door-open', 'visits', 'number') ?></div>
+        <div class="col-6 col-xl-3"><?= $kpi('New Visits', 'bi-person-plus', 'new_visits', 'number') ?></div>
+        <div class="col-6 col-xl-3"><?= $kpi('Avg. Visit', 'bi-stopwatch', 'avg_duration', 'duration') ?></div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">New and Returning Visits <span>| each day</span></h5>
+            <?php
+            // Returning visits each day: both series are counts of visits, so they share one axis
+            $rows = array_map(static fn (array $row): array => $row + [
+                'returning' => $row['visits'] - $row['new_visits'],
+            ], $trend);
+            ?>
+            <?= $this->partial('admin::partial/chart', [
+                'id'     => 'visitor-trend',
+                'type'   => 'trend',
+                'height' => 300,
+                'label'  => 'New and returning visits each day',
+                'data'   => ChartData::trend($rows, ['new_visits' => 'New', 'returning' => 'Returning']),
+            ]) ?>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Visitor Loyalty <span>| visits by how many times they had been</span></h5>
+                    <?= $this->partial('admin::partial/chart', [
+                        'id'     => 'loyalty',
+                        'type'   => 'bar',
+                        'height' => 260,
+                        'label'  => 'Visits by visit number',
+                        'data'   => ChartData::bar($loyalty, 'Visits'),
+                    ]) ?>
+                    <div class="text-end mt-2">
+                        <a class="small" href="<?= $this->url('report', ['id' => 'loyalty']) ?>">View full report <i class="bi bi-arrow-right"></i></a>
+                    </div>
+                </div>
+            </div>
+            <?= $card('Devices', 'devices', $devices, 'Device') ?>
+        </div>
+        <div class="col-lg-6">
+            <?= $card('Countries', 'locations', $countries, 'Country') ?>
+        </div>
+        <div class="col-lg-6"><?= $card('Browsers', 'browsers', $browsers, 'Browser') ?></div>
+        <div class="col-lg-6"><?= $card('Operating Systems', 'operating-systems', $systems, 'Operating System') ?></div>
+    </div>
+</section>

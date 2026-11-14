@@ -1,0 +1,79 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var Admin\Forms\ProfileForm $form
+ * @var string|null $notice
+ * @var App\Entity\User $currentUser
+ */
+
+use Admin\Forms\ProfileForm;
+
+$this->layout()->setVariables(['title' => 'My Profile', 'activeNav' => 'profile']);
+$this->inlineScript()->appendFile('/assets/js/password-toggle.js');
+
+$form
+    ->prepare()
+    ->setAttribute('method', 'post')
+    ->setAttribute('action', $this->url('profile'));
+
+$errorAttributes = ['class' => 'list-unstyled invalid-feedback d-block small mt-1 mb-0'];
+$field = function (string $name) use ($form, $errorAttributes): string {
+    $element = $form->get($name);
+    if ($element->getMessages()) {
+        $element->setAttribute('class', $element->getAttribute('class') . ' is-invalid');
+    }
+    $element->setLabelAttributes(['class' => 'form-label']);
+
+    return sprintf(
+        '<div class="col-md-6">%s%s%s</div>',
+        $this->formLabel($element),
+        $this->formElement($element),
+        $this->formElementErrors()->render($element, $errorAttributes)
+    );
+};
+?>
+<?= $this->partial('admin::partial/page-title', ['heading' => 'My Profile']) ?>
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body pt-3">
+                    <?php if ($notice) : ?>
+                        <div class="alert alert-success" role="status"><?= $this->escapeHtml($notice) ?></div>
+                    <?php endif ?>
+                    <?php if ($form->get('csrf')->getMessages()) : ?>
+                        <div class="alert alert-danger" role="alert"><?= $this->escapeHtml(ProfileForm::$responseMessages['csrf']) ?></div>
+                    <?php endif ?>
+
+                    <?= $this->form()->openTag($form) ?>
+                        <h5 class="card-title">Your Details</h5>
+                        <div class="row g-3">
+                            <?= $field('name') ?>
+                            <div class="col-md-6">
+                                <label class="form-label" for="email-shown">Email Address</label>
+                                <input class="form-control" id="email-shown" readonly
+                                       value="<?= $this->escapeHtmlAttr($currentUser->getEmail()) ?>">
+                                <div class="form-text">An administrator can change it.</div>
+                            </div>
+                        </div>
+
+                        <h5 class="card-title">Change Password</h5>
+                        <p class="form-text mt-0">Leave these blank to keep your current password.</p>
+                        <div class="row g-3">
+                            <?= $field('currentPassword') ?>
+                            <div class="col-md-6"></div>
+                            <?= $field('newPassword') ?>
+                            <?= $field('confirmPassword') ?>
+                        </div>
+
+                        <div class="d-flex gap-2 mt-4">
+                            <?= $this->formHidden($form->get('csrf')) ?>
+                            <?= $this->formSubmit($form->get('submit')) ?>
+                        </div>
+                    <?= $this->form()->closeTag() ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

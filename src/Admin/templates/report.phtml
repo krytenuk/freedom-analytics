@@ -1,0 +1,81 @@
+<?php
+/**
+ * A report of one dimension, from Admin\Report\Reports
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var Admin\Report\ReportContext $context
+ * @var string $id
+ * @var array{title: string, group: string, label: string, description: string, chart?: string|null, link?: string|null} $report
+ * @var array<string, mixed> $result
+ * @var int $page
+ * @var int $pages
+ */
+
+use Admin\Handler\ReportHandler;
+use Admin\View\ChartData;
+use Admin\View\Format;
+
+$this->layout()->setVariables(['title' => $report['title'], 'activeNav' => 'report:' . $id]);
+
+$url   = $this->url('report', ['id' => $id]);
+$chart = $report['chart'] ?? null;
+$query = $result['sort'] === $result['primary'] && $result['descending']
+    ? []
+    : ['sort' => $result['sort'], 'dir' => $result['descending'] ? 'desc' : 'asc'];
+$primary = $result['metrics'][$result['primary']];
+?>
+<?= $this->partial('admin::partial/report-header', ['heading' => $report['title'], 'context' => $context]) ?>
+
+<section class="section">
+    <p class="text-body-secondary"><?= $this->escapeHtml($report['description']) ?></p>
+
+    <div class="row">
+        <?php if ($chart !== null && $result['rows'] !== []) : ?>
+            <div class="<?= $chart === 'donut' ? 'col-xl-4' : 'col-12' ?>">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><?= $this->escapeHtml($primary['label']) ?> <span>| by <?= $this->escapeHtml(strtolower($report['label'])) ?></span></h5>
+                        <?= $this->partial('admin::partial/chart', [
+                            'id'     => 'report-chart',
+                            'type'   => $chart,
+                            'height' => $chart === 'donut' ? 300 : 280,
+                            'label'  => $primary['label'] . ' by ' . strtolower($report['label']),
+                            'data'   => $chart === 'donut'
+                                ? ChartData::donut($result, $primary['label'])
+                                : ChartData::bar($result, $primary['label']),
+                        ]) ?>
+                    </div>
+                </div>
+            </div>
+        <?php endif ?>
+
+        <div class="<?= $chart === 'donut' && $result['rows'] !== [] ? 'col-xl-8' : 'col-12' ?>">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <?= $this->escapeHtml($report['title']) ?>
+                        <span>| <?= Format::number($result['total']) ?> <?= $result['total'] === 1 ? 'row' : 'rows' ?>,
+                            <?= Format::metric($result['totals'][$result['primary']] ?? 0, $primary['format']) ?>
+                            <?= $this->escapeHtml(strtolower($primary['label'])) ?></span>
+                    </h5>
+                    <?= $this->partial('admin::partial/dimension-table', [
+                        'result'  => $result,
+                        'label'   => $report['label'],
+                        'link'    => $report['link'] ?? null,
+                        'sorting' => ['url' => $url, 'query' => []],
+                        'offset'  => ($page - 1) * ReportHandler::PER_PAGE,
+                    ]) ?>
+                    <div class="mt-3">
+                        <?= $this->partial('admin::partial/pagination', [
+                            'url'   => $url,
+                            'query' => $query,
+                            'page'  => $page,
+                            'pages' => $pages,
+                            'label' => $report['title'] . ' pages',
+                        ]) ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

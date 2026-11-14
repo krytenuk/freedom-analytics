@@ -1,0 +1,49 @@
+<?php
+
+/**
+ * Local configuration.
+ *
+ * Copy this file to `local.php` and change its settings as required. `local.php` is ignored by git and safe to use
+ * for local and sensitive data like usernames and passwords.
+ */
+
+declare(strict_types=1);
+
+return [
+    // Doctrine database connection. For the Docker setup the host is the "db" service, and the database, user and
+    // password must match the MARIADB_* settings in .env
+    'doctrine'      => [
+        'connection' => [
+            'orm_default' => [
+                'params' => [
+                    // Set by docker-compose.yml in the app container; 127.0.0.1:13307 reaches the db container from
+                    // the host, such as for bin/doctrine and vendor/bin/laminas
+                    'host'     => getenv('DB_HOST') ?: '127.0.0.1',
+                    'port'     => (int) (getenv('DB_PORT') ?: 13307),
+                    'dbname'   => 'analytics',
+                    'user'     => 'analytics',
+                    'password' => 'database_password', // MARIADB_PASSWORD in .env
+                ],
+            ],
+        ],
+    ],
+
+    // krytenuk/doctrine-auth. Set a random throttle secret, e.g. from: php -r 'echo bin2hex(random_bytes(32));'
+    // It keys the hashes in failed_login_attempts_log. Changing it resets failed login counts, so keep it stable.
+    'doctrine-auth' => [
+        'throttle' => [
+            'secret' => 'your_secret',
+        ],
+    ],
+
+    'analytics'     => [
+        // Keys the daily hash that counts visitors whose browsers block the tracker's cookie. Random and private,
+        // e.g. from: php -r 'echo bin2hex(random_bytes(16));'
+        'visitor_hash_secret' => 'your_secret',
+        // Override any of the other settings in analytics.global.php, such as:
+        // 'timezone'       => 'Europe/London',
+        // 'retention_days' => 400,
+        // Behind a proxy or load balancer that sets it, the header holding the visitor's address:
+        // 'ip_header'      => 'X-Forwarded-For',
+    ],
+];

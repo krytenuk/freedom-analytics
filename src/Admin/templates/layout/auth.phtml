@@ -1,0 +1,77 @@
+<?php
+/**
+ * The layout for pages shown before logging in, and error pages: a centred card, as NiceAdmin's login page.
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var string $content
+ * @var string|null $title
+ */
+
+$assets = '/assets/admin';
+?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta name="robots" content="noindex, nofollow">
+
+    <title><?= $this->escapeHtml(($title ?? 'Log In') . ' - Freedom Analytics') ?></title>
+    <?= $this->headMeta() ?>
+
+    <script src="<?= $assets ?>/js/theme.js"></script>
+
+    <link href="/assets/img/favicon.png" rel="icon">
+    <link href="/assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+
+    <link href="https://fonts.gstatic.com" rel="preconnect">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700|Nunito:300,400,600,700|Poppins:300,400,500,600,700"
+          rel="stylesheet">
+
+    <link href="<?= $assets ?>/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="<?= $assets ?>/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+    <link href="<?= $assets ?>/css/style.css" rel="stylesheet">
+    <link href="<?= $assets ?>/css/dark.css" rel="stylesheet">
+    <?= $this->headLink() ?>
+</head>
+
+<body>
+
+<main>
+    <div class="container">
+        <section class="section register min-vh-100 d-flex flex-column align-items-center justify-content-center py-4">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-5 col-md-7 d-flex flex-column align-items-center justify-content-center">
+
+                        <div class="d-flex justify-content-center py-4">
+                            <a href="/" class="logo d-flex align-items-center w-auto">
+                                <img src="/assets/img/logo.webp" alt="">
+                                <span class="d-none d-lg-block">Freedom Analytics</span>
+                            </a>
+                        </div>
+
+                        <div class="card mb-3 w-100">
+                            <div class="card-body">
+                                <?= $content ?>
+                            </div>
+                        </div>
+
+                        <div class="credits small text-body-secondary">
+                            Designed by <a href="https://bootstrapmade.com/">BootstrapMade</a>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script src="<?= $assets ?>/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<?= $this->inlineScript() ?>
+
+</body>
+
+</html>

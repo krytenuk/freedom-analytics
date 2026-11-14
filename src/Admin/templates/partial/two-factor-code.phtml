@@ -1,0 +1,23 @@
+<?php
+/**
+ * The code field of TwoFactorCodeForm. two-factor-code.js turns it into boxes, 6 for a code from the app or 10 for a
+ * recovery code, and the page still works without it.
+ *
+ * Add the script and stylesheet to the page:
+ *     $this->headLink()->appendStylesheet('/assets/css/two-factor-code.css');
+ *     $this->inlineScript()->appendFile('/assets/js/two-factor-code.js');
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var Admin\Forms\TwoFactorCodeForm $form
+ * @var bool $recovery Whether recovery codes are accepted too, which adds a link to switch to the recovery code boxes
+ */
+
+$errorAttributes = ['class' => 'list-unstyled text-danger small mt-1 mb-0'];
+?>
+<div class="two-factor-code" data-two-factor-code data-recovery="<?= $recovery ? 'true' : 'false' ?>">
+    <div class="form-floating" data-two-factor-code-text>
+        <?= $this->formText($form->get('code')) ?>
+        <?= $this->formLabel($form->get('code')) ?>
+    </div>
+    <?= $this->formElementErrors()->render($form->get('code'), $errorAttributes) ?>
+</div>

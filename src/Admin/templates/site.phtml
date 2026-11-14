@@ -1,0 +1,154 @@
+<?php
+/**
+ * A site's settings and tracking code
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var App\Entity\Site $site
+ * @var array{visits: int, pageviews: int, firstVisit: DateTimeImmutable|null, lastActivity: DateTimeImmutable|null} $stats
+ * @var string|null $notice
+ * @var string $deleteToken
+ * @var string $keyToken
+ */
+
+use Admin\View\Format;
+
+$id = $site->getId();
+
+$this->layout()->setVariables(['title' => $site->getName(), 'activeNav' => 'sites']);
+$this->inlineScript()->appendFile('/assets/js/confirm-submit.js');
+
+$scriptUrl = $this->serverUrl('/fa.js');
+$snippet   = <<<HTML
+<!-- Freedom Analytics -->
+<script async src="{$scriptUrl}" data-site="{$site->getSiteKey()}"></script>
+HTML;
+$eventSnippet = <<<JS
+<script>
+  window.fa = window.fa || function () { (fa.q = fa.q || []).push(arguments); };
+  // Record something a visitor did: category, action, and an optional label and value
+  fa('event', 'Downloads', 'Download', 'brochure.pdf');
+</script>
+JS;
+?>
+<?= $this->partial('admin::partial/page-title', [
+    'heading' => $site->getName(),
+    'crumbs'  => [$this->url('sites') => 'Sites'],
+]) ?>
+
+<section class="section">
+    <?php if ($notice) : ?>
+        <div class="alert alert-success" role="status"><?= $this->escapeHtml($notice) ?></div>
+    <?php endif ?>
+
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Tracking Code</h5>
+                    <p>
+                        Put this just before <code>&lt;/head&gt;</code> on every page of the site. It records each page
+                        view, and keeps a random visitor id in a first party cookie on the site.
+                    </p>
+                    <div class="position-relative">
+                        <pre class="code-block" id="snippet"><code><?= $this->escapeHtml($snippet) ?></code></pre>
+                        <button type="button" class="btn btn-sm btn-outline-secondary copy-button" data-copy="snippet">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                    </div>
+
+                    <h6 class="mt-4">Options</h6>
+                    <p class="small mb-2">Add these attributes to the script tag to change what it does:</p>
+                    <dl class="row small mb-0">
+                        <dt class="col-sm-5"><code>data-cookieless</code></dt>
+                        <dd class="col-sm-7">Uses no cookie. Visitors are then counted as new each day.</dd>
+                        <dt class="col-sm-5"><code>data-spa</code></dt>
+                        <dd class="col-sm-7">Records a page view when a single page app changes the address.</dd>
+                        <dt class="col-sm-5"><code>data-outbound</code></dt>
+                        <dd class="col-sm-7">Records clicks on links to other sites as events.</dd>
+                        <dt class="col-sm-5"><code>data-downloads</code></dt>
+                        <dd class="col-sm-7">Records clicks on links to files, such as PDFs, as events.</dd>
+                        <dt class="col-sm-5"><code>data-manual</code></dt>
+                        <dd class="col-sm-7">Records nothing until the page calls <code>fa('pageview')</code>.</dd>
+                    </dl>
+
+                    <h6 class="mt-4">Events</h6>
+                    <p class="small">Record what visitors do, such as downloads or sending a form, from the page's own script:</p>
+                    <div class="position-relative">
+                        <pre class="code-block" id="event-snippet"><code><?= $this->escapeHtml($eventSnippet) ?></code></pre>
+                        <button type="button" class="btn btn-sm btn-outline-secondary copy-button" data-copy="event-snippet">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-body pt-3">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Domain</dt>
+                        <dd class="col-sm-7"><?= $this->escapeHtml($site->getDomain()) ?></dd>
+                        <dt class="col-sm-5">Site key</dt>
+                        <dd class="col-sm-7"><code class="user-select-all"><?= $this->escapeHtml($site->getSiteKey()) ?></code></dd>
+                        <dt class="col-sm-5">Status</dt>
+                        <dd class="col-sm-7"><?= $site->isActive() ? 'Collecting' : 'Paused' ?></dd>
+                        <dt class="col-sm-5">Other domains</dt>
+                        <dd class="col-sm-7"><?= $site->isCheckDomain() ? 'Refused' : 'Accepted' ?></dd>
+                        <dt class="col-sm-5">Do Not Track</dt>
+                        <dd class="col-sm-7"><?= $site->isRespectDoNotTrack() ? 'Respected' : 'Ignored' ?></dd>
+                        <dt class="col-sm-5">Excluded IPs</dt>
+                        <dd class="col-sm-7 font-monospace small"><?= $site->getExcludedIpList() === []
+                            ? '<span class="text-body-secondary font-sans-serif">None</span>'
+                            : implode('<br>', array_map(fn (string $ip): string => $this->escapeHtml($ip), $site->getExcludedIpList())) ?></dd>
+                        <dt class="col-sm-5">Visits</dt>
+                        <dd class="col-sm-7"><?= Format::number($stats['visits']) ?></dd>
+                        <dt class="col-sm-5">Page views</dt>
+                        <dd class="col-sm-7"><?= Format::number($stats['pageviews']) ?></dd>
+                        <dt class="col-sm-5">Last activity</dt>
+                        <dd class="col-sm-7"><?= $stats['lastActivity'] === null ? 'Never: check the tracking code is on the site' : $this->escapeHtml($stats['lastActivity']->format('j M Y, H:i')) ?></dd>
+                        <dt class="col-sm-5">Added</dt>
+                        <dd class="col-sm-7"><?= $this->escapeHtml($site->getCreatedAt()->format('j M Y')) ?></dd>
+                    </dl>
+                    <?php if ($site->getDescription() !== null) : ?>
+                        <p class="small text-body-secondary mt-3 mb-0"><?= nl2br($this->escapeHtml($site->getDescription())) ?></p>
+                    <?php endif ?>
+
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+                        <a class="btn btn-primary" href="<?= $this->url('dashboard') ?>?site=<?= (int) $id ?>">
+                            <i class="bi bi-bar-chart me-1"></i> Reports
+                        </a>
+                        <a class="btn btn-outline-primary" href="<?= $this->url('site-edit', ['id' => $id]) ?>">
+                            <i class="bi bi-pencil me-1"></i> Edit
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-danger-subtle">
+                <div class="card-body pt-3">
+                    <h5 class="card-title pt-0">Danger Zone</h5>
+                    <form method="post" action="<?= $this->url('site-key', ['id' => $id]) ?>" class="mb-3"
+                          data-confirm="The current tracking code will stop working until it is replaced on the site. Are you sure?">
+                        <input type="hidden" name="csrf" value="<?= $this->escapeHtmlAttr($keyToken) ?>">
+                        <button type="submit" class="btn btn-outline-warning btn-sm">
+                            <i class="bi bi-arrow-repeat me-1"></i> New Site Key
+                        </button>
+                        <div class="form-text">For when the tracking code has been copied to another site.</div>
+                    </form>
+                    <form method="post" action="<?= $this->url('site-delete', ['id' => $id]) ?>"
+                          data-confirm="<?= $this->escapeHtmlAttr(sprintf(
+                              '%s and all its visits will be permanently deleted and cannot be recovered. Are you sure?',
+                              $site->getName()
+                          )) ?>">
+                        <input type="hidden" name="csrf" value="<?= $this->escapeHtmlAttr($deleteToken) ?>">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-trash me-1"></i> Delete Site
+                        </button>
+                        <div class="form-text">Deletes every visit, page view and event too. To keep them, pause the site instead.</div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

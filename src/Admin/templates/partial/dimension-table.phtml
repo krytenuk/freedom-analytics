@@ -1,0 +1,114 @@
+<?php
+/**
+ * A dimension report's rows, with each row's share of the main metric shown as a bar
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var array{rows: list<array<string, mixed>>, metrics: array<string, array{label: string, format: string}>, primary: string, sort: string, descending: bool, bucketed: bool} $result
+ * @var string $label The dimension's column heading
+ * @var string|null $link "page" or "host"
+ * @var list<string>|null $columns The metrics to show, or null for all
+ * @var array{url: string, query: array<string, string>}|null $sorting To make the headings sort the report
+ * @var int $offset The number of rows on earlier pages
+ */
+
+use Admin\View\Format;
+
+$link    = $link ?? null;
+$offset  = $offset ?? 0;
+$metrics = $result['metrics'];
+if (isset($columns)) {
+    $metrics = array_intersect_key($metrics, array_flip($columns));
+}
+$extra = [];
+foreach (['medium' => 'Medium', 'source' => 'Source', 'category' => 'Category', 'action' => 'Action'] as $column => $heading) {
+    if ($result['rows'] !== [] && array_key_exists($column, $result['rows'][0])) {
+        $extra[$column] = $heading;
+    }
+}
+$sorting  = $sorting ?? null;
+$heading = function (string $column, string $text, string $class = '') use ($sorting, $result): string {
+    if ($sorting === null || $result['bucketed']) {
+        return '<th scope="col" class="' . $class . '">' . $this->escapeHtml($text) . '</th>';
+    }
+
+    return str_replace('<th scope="col"', '<th scope="col" class="' . $class . '"', $this->partial(
+        'admin::partial/sort-heading',
+        [
+            'url'        => $sorting['url'],
+            'query'      => $sorting['query'],
+            'column'     => $column,
+            'label'      => $text,
+            'sort'       => $result['sort'],
+            'descending' => $result['descending'],
+        ]
+    ));
+};
+?>
+<?php if ($result['rows'] === []) : ?>
+    <p class="text-body-secondary mb-0">Nothing was recorded in this period.</p>
+<?php else : ?>
+    <div class="table-responsive">
+        <table class="table table-borderless table-hover align-middle report-table mb-0">
+            <thead>
+            <tr>
+                <?php if (! $result['bucketed']) : ?>
+                    <th scope="col" class="text-body-secondary">#</th>
+                <?php endif ?>
+                <th scope="col"><?= $this->escapeHtml($label) ?></th>
+                <?php foreach ($extra as $heading2) : ?>
+                    <th scope="col"><?= $this->escapeHtml($heading2) ?></th>
+                <?php endforeach ?>
+                <?php foreach ($metrics as $column => $metric) : ?>
+                    <?= $heading($column, $metric['label'], 'text-end') ?>
+                <?php endforeach ?>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($result['rows'] as $index => $row) : ?>
+                <tr>
+                    <?php if (! $result['bucketed']) : ?>
+                        <td class="text-body-secondary small"><?= $offset + $index + 1 ?></td>
+                    <?php endif ?>
+                    <td class="dimension-cell">
+                        <div class="d-flex flex-column">
+                            <?php if ($link === 'page' && $row['key'] !== null) : ?>
+                                <a href="<?= $this->url('page', ['id' => $row['key']]) ?>" class="text-break">
+                                    <?= $this->escapeHtml((string) $row['label']) ?>
+                                </a>
+                                <?php if (! empty($row['title'])) : ?>
+                                    <span class="small text-body-secondary text-truncate"><?= $this->escapeHtml((string) $row['title']) ?></span>
+                                <?php endif ?>
+                            <?php elseif ($link === 'host' && $row['key'] !== null) : ?>
+                                <span class="text-break">
+                                    <?= $this->escapeHtml((string) $row['label']) ?>
+                                    <a href="https://<?= $this->escapeHtmlAttr((string) $row['key']) ?>/" target="_blank"
+                                       rel="noopener noreferrer nofollow" title="Open the site"
+                                       aria-label="Open <?= $this->escapeHtmlAttr((string) $row['label']) ?>">
+                                        <i class="bi bi-box-arrow-up-right small"></i>
+                                    </a>
+                                </span>
+                            <?php else : ?>
+                                <span class="text-break"><?= $this->escapeHtml((string) $row['label']) ?></span>
+                            <?php endif ?>
+                            <div class="share-bar" aria-hidden="true">
+                                <span style="width: <?= round($row['share'] * 100, 1) ?>%"></span>
+                            </div>
+                        </div>
+                    </td>
+                    <?php foreach (array_keys($extra) as $column) : ?>
+                        <td><?= $this->escapeHtml((string) ($row[$column] ?? '')) ?></td>
+                    <?php endforeach ?>
+                    <?php foreach ($metrics as $column => $metric) : ?>
+                        <td class="text-end text-nowrap">
+                            <?= $this->escapeHtml(Format::metric($row[$column] ?? 0, $metric['format'])) ?>
+                            <?php if ($column === $result['primary']) : ?>
+                                <span class="small text-body-secondary d-block"><?= Format::percent($row['share']) ?></span>
+                            <?php endif ?>
+                        </td>
+                    <?php endforeach ?>
+                </tr>
+            <?php endforeach ?>
+            </tbody>
+        </table>
+    </div>
+<?php endif ?>

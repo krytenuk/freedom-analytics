@@ -1,0 +1,26 @@
+<?php
+/**
+ * A table column heading that sorts the list by that column, or reverses the order if it is already sorted by it.
+ * Sorting goes back to the first page.
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var string $url The list's address, without a query
+ * @var array<string, string> $query Other query parameters to keep, such as a search
+ * @var string $column
+ * @var string $label
+ * @var string $sort The column the list is sorted by
+ * @var bool $descending
+ */
+
+$current   = $column === $sort;
+$direction = $current && ! $descending ? 'desc' : 'asc';
+$href      = $url . '?' . http_build_query(['sort' => $column, 'dir' => $direction] + $query);
+?>
+<th scope="col"<?= $current ? ' aria-sort="' . ($descending ? 'descending' : 'ascending') . '"' : '' ?>>
+    <a class="text-reset text-decoration-none" href="<?= $this->escapeHtmlAttr($href) ?>">
+        <?= $this->escapeHtml($label) ?>
+        <?php if ($current) : ?>
+            <i class="bi <?= $descending ? 'bi-caret-down-fill' : 'bi-caret-up-fill' ?>"></i>
+        <?php endif ?>
+    </a>
+</th>

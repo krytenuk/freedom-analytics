@@ -1,0 +1,47 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var Admin\Forms\TwoFactorCodeForm $form
+ * @var string|null $message
+ * @var bool $expired
+ */
+
+$this->layout()->setVariables(['title' => 'Log In']);
+$this->headLink()->appendStylesheet('/assets/css/two-factor-code.css');
+$this->inlineScript()->appendFile('/assets/js/two-factor-code.js');
+
+$form
+    ->prepare()
+    ->setAttribute('action', $this->url('login-code'))
+    ->setAttribute('method', 'post');
+
+$errorAttributes = ['class' => 'list-unstyled text-danger small mt-1 mb-0'];
+?>
+<div class="pt-4 pb-2">
+    <h5 class="card-title text-center pb-0 fs-4">Enter Your Code</h5>
+</div>
+
+<?php if ($message) : ?>
+    <div class="alert alert-danger" role="alert"><?= $this->escapeHtml($message) ?></div>
+<?php endif ?>
+<?php if ($expired) : ?>
+    <div class="text-center mb-3">
+        <a class="btn btn-primary" href="<?= $this->url('login') ?>">Log In</a>
+    </div>
+<?php else : ?>
+    <p class="small">
+        Enter the 6 digit code from your authenticator app. If you do not have your phone, enter one of your recovery
+        codes instead.
+    </p>
+    <?= $this->form()->openTag($form) ?>
+        <?= $this->partial('admin::partial/two-factor-code', ['form' => $form, 'recovery' => true]) ?>
+        <?= $this->formElementErrors()->render($form->get('csrf'), $errorAttributes) ?>
+        <div class="d-grid mt-3">
+            <?= $this->formHidden($form->get('csrf')) ?>
+            <?= $this->formSubmit($form->get('submit')) ?>
+        </div>
+    <?= $this->form()->closeTag() ?>
+    <p class="text-center small mt-3">
+        <a href="<?= $this->url('login') ?>">Start again</a>
+    </p>
+<?php endif ?>

@@ -1,0 +1,401 @@
+/**
+ * Dark theme for the NiceAdmin template, used in the admin area.
+ *
+ * style.css is NiceAdmin's own file and is left untouched. It sets its colours directly, so every rule here is scoped to
+ * [data-bs-theme="dark"], which both limits it to the dark theme and makes it win over style.css. js/theme.js sets
+ * data-bs-theme on <html>. The Bootstrap variables below make Bootstrap's own components (cards, dropdowns, forms,
+ * tables, alerts, modals) follow the same colours.
+ */
+
+[data-bs-theme="dark"] {
+  --admin-page-bg: #10151f;
+  --admin-surface: #1a2130;
+  --admin-surface-hover: #232d42;
+  --admin-border: #2b3549;
+  --admin-heading: #e4e9f5;
+  --admin-text: #b7c1d6;
+  --admin-muted: #8592ab;
+  /* NiceAdmin's #4154f1, lightened so links and highlights stand out on a dark background */
+  --admin-accent: #7b88ff;
+  --admin-accent-hover: #9aa4ff;
+  --admin-shadow: rgba(0, 0, 0, 0.35);
+
+  --bs-body-bg: var(--admin-surface);
+  --bs-body-bg-rgb: 26, 33, 48;
+  --bs-body-color: var(--admin-text);
+  --bs-body-color-rgb: 183, 193, 214;
+  --bs-emphasis-color: var(--admin-heading);
+  --bs-heading-color: var(--admin-heading);
+  --bs-secondary-color: var(--admin-muted);
+  --bs-secondary-bg: var(--admin-surface-hover);
+  --bs-tertiary-bg: #1e2638;
+  --bs-border-color: var(--admin-border);
+  --bs-link-color: var(--admin-accent);
+  --bs-link-color-rgb: 123, 136, 255;
+  --bs-link-hover-color: var(--admin-accent-hover);
+  --bs-link-hover-color-rgb: 154, 164, 255;
+}
+
+/*--------------------------------------------------------------
+# General
+--------------------------------------------------------------*/
+[data-bs-theme="dark"] body {
+  background: var(--admin-page-bg);
+  color: var(--admin-text);
+}
+
+/*
+ * :where() keeps these as specific as style.css's own a and a:hover rules, so they replace them without also
+ * overriding the colours of links styled as buttons or dropdown items.
+ */
+:where([data-bs-theme="dark"]) a {
+  color: var(--admin-accent);
+}
+
+:where([data-bs-theme="dark"]) a:hover {
+  color: var(--admin-accent-hover);
+}
+
+[data-bs-theme="dark"] .pagetitle h1 {
+  color: var(--admin-heading);
+}
+
+/* Inputs a shade darker than the cards they sit on, so they stand out */
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+  background-color: var(--admin-page-bg);
+}
+
+/*--------------------------------------------------------------
+# Dropdowns
+--------------------------------------------------------------*/
+[data-bs-theme="dark"] .dropdown-menu {
+  box-shadow: 0 5px 30px 0 var(--admin-shadow);
+}
+
+[data-bs-theme="dark"] .dropdown-menu .dropdown-footer a,
+[data-bs-theme="dark"] .header-nav .profile .dropdown-header h6,
+[data-bs-theme="dark"] .header-nav .messages .message-item h4 {
+  color: var(--admin-heading);
+}
+
+[data-bs-theme="dark"] .dropdown-menu .dropdown-divider {
+  color: var(--admin-border);
+}
+
+[data-bs-theme="dark"] .dropdown-menu .dropdown-item:hover,
+[data-bs-theme="dark"] .header-nav .profile .dropdown-item:hover,
+[data-bs-theme="dark"] .header-nav .notifications .notification-item:hover,
+[data-bs-theme="dark"] .header-nav .messages .message-item:hover {
+  background-color: var(--admin-surface-hover);
+}
+
+[data-bs-theme="dark"] .dropdown-menu-arrow::before {
+  background: var(--admin-surface);
+  border-top-color: var(--admin-border);
+  border-left-color: var(--admin-border);
+}
+
+[data-bs-theme="dark"] .header-nav .notifications .notification-item p,
+[data-bs-theme="dark"] .header-nav .messages .message-item p {
+  color: var(--admin-muted);
+}
+
+/*--------------------------------------------------------------
+# Light backgrounds
+--------------------------------------------------------------*/
+[data-bs-theme="dark"] .bg-primary-light {
+  background-color: #1d2a4d;
+  border-color: #1d2a4d;
+}
+
+[data-bs-theme="dark"] .bg-secondary-light {
+  background-color: #2b2f36;
+  border-color: #2b2f36;
+}
+
+[data-bs-theme="dark"] .bg-success-light {
+  background-color: #17332a;
+  border-color: #17332a;
+}
+
+[data-bs-theme="dark"] .bg-danger-light {
+  background-color: #3d1d22;
+  border-color: #3d1d22;
+}
+
+[data-bs-theme="dark"] .bg-warning-light {
+  background-color: #3b3216;
+  border-color: #3b3216;
+}
+
+[data-bs-theme="dark"] .bg-info-light {
+  background-color: #133640;
+  border-color: #133640;
+}
+
+[data-bs-theme="dark"] .bg-dark-light {
+  background-color: #2a2d33;
+  border-color: #2a2d33;
+}
+
+/*--------------------------------------------------------------
+# Cards, accordions, breadcrumbs and tabs
+--------------------------------------------------------------*/
+[data-bs-theme="dark"] .card {
+  box-shadow: 0 0 30px var(--admin-shadow);
+}
+
+[data-bs-theme="dark"] .card-header,
+[data-bs-theme="dark"] .card-footer {
+  border-color: var(--admin-border);
+  background-color: var(--admin-surface);
+  color: var(--admin-muted);
+}
+
+[data-bs-theme="dark"] .card-title,
+[data-bs-theme="dark"] .accordion-button:not(.collapsed) {
+  color: var(--admin-heading);
+}
+
+[data-bs-theme="dark"] .card-title span {
+  color: var(--admin-muted);
+}
+
+[data-bs-theme="dark"] .card-img-overlay {
+  background-color: rgba(16, 21, 31, 0.6);
+}
+
+[data-bs-theme="dark"] .accordion-item {
+  border-color: var(--admin-border);
+}
+
+[data-bs-theme="dark"] .accordion-button:not(.collapsed) {
+  background-color: var(--admin-surface-hover);
+}
+
+[data-bs-theme="dark"] .accordion-flush .accordion-button:not(.collapsed) {
+  color: var(--admin-accent);
+}
+
+[data-bs-theme="dark"] .accordion-flush .accordion-body {
+  color: var(--admin-text);
+}
+
+[data-bs-theme="dark"] .breadcrumb,
+[data-bs-theme="dark"] .breadcrumb a,
+[data-bs-theme="dark"] .breadcrumb .breadcrumb-item::before {
+  color: var(--admin-muted);
+}
+
+[data-bs-theme="dark"] .breadcrumb a:hover,
+[data-bs-theme="dark"] .breadcrumb .active {
+  color: var(--admin-text);
+}
+
+[data-bs-theme="dark"] .nav-tabs-bordered {
+  border-bottom-color: var(--admin-border);
+}
+
+[data-bs-theme="dark"] .nav-tabs-bordered .nav-link {
+  color: var(--admin-text);
+}
+
+[data-bs-theme="dark"] .nav-tabs-bordered .nav-link:hover,
+[data-bs-theme="dark"] .nav-tabs-bordered .nav-link:focus {
+  color: var(--admin-accent);
+}
+
+[data-bs-theme="dark"] .nav-tabs-bordered .nav-link.active {
+  background-color: var(--admin-surface);
+  color: var(--admin-accent);
+  border-bottom-color: var(--admin-accent);
+}
+
+/*--------------------------------------------------------------
+# Header
+--------------------------------------------------------------*/
+[data-bs-theme="dark"] .header {
+  background-color: var(--admin-surface);
+  box-shadow: 0 2px 20px var(--admin-shadow);
+}
+
+[data-bs-theme="dark"] .logo span,
+[data-bs-theme="dark"] .header .toggle-sidebar-btn,
+[data-bs-theme="dark"] .header-nav .nav-icon,
+[data-bs-theme="dark"] .header-nav .nav-profile,
+[data-bs-theme="dark"] .header .search-form button i {
+  color: var(--admin-heading);
+}
+
+[data-bs-theme="dark"] .header .search-bar {
+  background: var(--admin-surface);
+  box-shadow: 0 0 15px 0 var(--admin-shadow);
+}
+
+[data-bs-theme="dark"] .header .search-form input {
+  color: var(--admin-heading);
+  border-color: var(--admin-border);
+}
+
+[data-bs-theme="dark"] .header .search-form input:focus,
+[data-bs-theme="dark"] .header .search-form input:hover {
+  border-color: var(--admin-muted);
+  box-shadow: 0 0 10px 0 var(--admin-shadow);
+}
+
+/*--------------------------------------------------------------
+# Sidebar
+--------------------------------------------------------------*/
+[data-bs-theme="dark"] .sidebar,
+[data-bs-theme="dark"] .sidebar::-webkit-scrollbar {
+  background-color: var(--admin-surface);
+}
+
+[data-bs-theme="dark"] .sidebar {
+  box-shadow: 0 0 20px var(--admin-shadow);
+}
+
+[data-bs-theme="dark"] .sidebar::-webkit-scrollbar-thumb {
+  background-color: var(--admin-border);
+}
+
+[data-bs-theme="dark"] .sidebar-nav .nav-heading,
+[data-bs-theme="dark"] .sidebar-nav .nav-link.collapsed i {
+  color: var(--admin-muted);
+}
+
+/* The current page's link */
+[data-bs-theme="dark"] .sidebar-nav .nav-link,
+[data-bs-theme="dark"] .sidebar-nav .nav-link:hover {
+  color: var(--admin-accent);
+  background: var(--admin-surface-hover);
+}
+
+[data-bs-theme="dark"] .sidebar-nav .nav-link i,
+[data-bs-theme="dark"] .sidebar-nav .nav-link:hover i {
+  color: var(--admin-accent);
+}
+
+[data-bs-theme="dark"] .sidebar-nav .nav-link.collapsed {
+  color: var(--admin-heading);
+  background: var(--admin-surface);
+}
+
+[data-bs-theme="dark"] .sidebar-nav .nav-link.collapsed:hover {
+  color: var(--admin-accent);
+  background: var(--admin-surface-hover);
+}
+
+[data-bs-theme="dark"] .sidebar-nav .nav-link.collapsed:hover i {
+  color: var(--admin-accent);
+}
+
+[data-bs-theme="dark"] .sidebar-nav .nav-content a {
+  color: var(--admin-text);
+}
+
+[data-bs-theme="dark"] .sidebar-nav .nav-content a:hover,
+[data-bs-theme="dark"] .sidebar-nav .nav-content a.active {
+  color: var(--admin-accent);
+}
+
+[data-bs-theme="dark"] .sidebar-nav .nav-content a.active i {
+  background-color: var(--admin-accent);
+}
+
+/*--------------------------------------------------------------
+# Dashboard
+--------------------------------------------------------------*/
+[data-bs-theme="dark"] .dashboard .filter .icon,
+[data-bs-theme="dark"] .dashboard .filter .dropdown-header h6 {
+  color: var(--admin-muted);
+}
+
+[data-bs-theme="dark"] .dashboard .filter .icon:hover,
+[data-bs-theme="dark"] .dashboard .filter .icon:focus,
+[data-bs-theme="dark"] .dashboard .news h4 a:hover {
+  color: var(--admin-accent);
+}
+
+[data-bs-theme="dark"] .dashboard .info-card h6,
+[data-bs-theme="dark"] .dashboard .news h4 a {
+  color: var(--admin-heading);
+}
+
+[data-bs-theme="dark"] .dashboard .sales-card .card-icon {
+  color: var(--admin-accent);
+  background: #232a4d;
+}
+
+[data-bs-theme="dark"] .dashboard .revenue-card .card-icon {
+  background: #17332a;
+}
+
+[data-bs-theme="dark"] .dashboard .customers-card .card-icon {
+  background: #3d2a1d;
+}
+
+[data-bs-theme="dark"] .dashboard .activity .activity-item .activite-label,
+[data-bs-theme="dark"] .dashboard .news p {
+  color: var(--admin-muted);
+}
+
+[data-bs-theme="dark"] .dashboard .activity .activity-item .activite-label::before {
+  background-color: var(--admin-border);
+}
+
+[data-bs-theme="dark"] .dashboard .activity .activity-item .activity-badge {
+  border-color: var(--admin-surface);
+}
+
+[data-bs-theme="dark"] .dashboard .recent-sales .table thead,
+[data-bs-theme="dark"] .dashboard .top-selling .table thead {
+  background: var(--admin-surface-hover);
+}
+
+/*--------------------------------------------------------------
+# Icons list, profile, FAQ, contact and 404 pages
+--------------------------------------------------------------*/
+[data-bs-theme="dark"] .iconslist .icon {
+  background-color: var(--admin-surface);
+  color: var(--admin-heading);
+}
+
+[data-bs-theme="dark"] .iconslist .label,
+[data-bs-theme="dark"] .profile .profile-overview .label,
+[data-bs-theme="dark"] .profile .profile-edit label,
+[data-bs-theme="dark"] .profile .profile-card .social-links a,
+[data-bs-theme="dark"] .faq .basic p {
+  color: var(--admin-muted);
+}
+
+[data-bs-theme="dark"] .profile .profile-card h2,
+[data-bs-theme="dark"] .profile .profile-card .social-links a:hover,
+[data-bs-theme="dark"] .profile .profile-overview .card-title,
+[data-bs-theme="dark"] .contact .info-box h3,
+[data-bs-theme="dark"] .error-404 h2 {
+  color: var(--admin-heading);
+}
+
+[data-bs-theme="dark"] .faq .basic h6,
+[data-bs-theme="dark"] .contact .info-box i,
+[data-bs-theme="dark"] .error-404 h1 {
+  color: var(--admin-accent);
+}
+
+[data-bs-theme="dark"] .contact .php-email-form .loading {
+  background: var(--admin-surface);
+}
+
+/*--------------------------------------------------------------
+# Footer
+--------------------------------------------------------------*/
+[data-bs-theme="dark"] .footer {
+  border-top-color: var(--admin-border);
+}
+
+[data-bs-theme="dark"] .footer .copyright,
+[data-bs-theme="dark"] .footer .credits {
+  color: var(--admin-muted);
+}

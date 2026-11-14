@@ -1,0 +1,135 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var Admin\Forms\UserForm $form
+ * @var App\Entity\User $user
+ * @var string|null $error
+ * @var string|null $whyNotRemovable
+ * @var string $deleteToken
+ */
+
+use Admin\Forms\UserForm;
+
+$isNew = $user->getId() === null;
+$id    = $user->getId();
+
+$this->layout()->setVariables(['title' => $isNew ? 'Add User' : 'Edit User', 'activeNav' => 'users']);
+$this->inlineScript()->appendFile('/assets/js/password-toggle.js');
+$this->inlineScript()->appendFile('/assets/js/confirm-submit.js');
+
+$form
+    ->prepare()
+    ->setAttribute('method', 'post')
+    ->setAttribute('action', $isNew ? $this->url('user-add') : $this->url('user-edit', ['id' => $id]));
+$form->get('submit')->setValue($isNew ? 'Add User' : 'Save User');
+
+$errorAttributes = ['class' => 'list-unstyled invalid-feedback d-block small mt-1 mb-0'];
+$prepare = function (string $name) use ($form) {
+    $element = $form->get($name);
+    if ($element->getMessages()) {
+        $element->setAttribute('class', $element->getAttribute('class') . ' is-invalid');
+    }
+    $element->setLabelAttributes(['class' => 'form-label']);
+
+    return $element;
+};
+$errors = fn (string $name): string => $this->formElementErrors()->render($form->get($name), $errorAttributes);
+$field  = fn (string $name): string => sprintf(
+    '<div class="col-md-6">%s%s%s</div>',
+    $this->formLabel($prepare($name)),
+    $this->formElement($form->get($name)),
+    $errors($name)
+);
+$siteOptions = $form->get('sites')->getValueOptions();
+?>
+<?= $this->partial('admin::partial/page-title', [
+    'heading' => $isNew ? 'Add User' : 'Edit ' . $user->getDisplayName(),
+    'crumbs'  => [$this->url('users') => 'Users'],
+]) ?>
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body pt-3">
+                    <?php if ($error) : ?>
+                        <div class="alert alert-danger" role="alert"><?= $this->escapeHtml($error) ?></div>
+                    <?php endif ?>
+                    <?php if ($form->get('csrf')->getMessages()) : ?>
+                        <div class="alert alert-danger" role="alert"><?= $this->escapeHtml(UserForm::$responseMessages['csrf']) ?></div>
+                    <?php endif ?>
+
+                    <?= $this->form()->openTag($form) ?>
+                        <h5 class="card-title">User</h5>
+                        <div class="row g-3">
+                            <?= $field('name') ?>
+                            <?= $field('email') ?>
+                            <div class="col-md-6">
+                                <?= $this->formLabel($prepare('role')) ?>
+                                <?= $this->formSelect($form->get('role')) ?>
+                                <?= $errors('role') ?>
+                                <div class="form-text">Administrators see every site, and manage sites and users.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <?= $this->formLabel($prepare('password')) ?>
+                                <div class="input-group has-validation">
+                                    <?= $this->formPassword($form->get('password')) ?>
+                                    <button type="button" class="btn btn-outline-secondary" data-toggle-password="password"
+                                            aria-controls="password">
+                                        <i class="bi bi-eye"></i><span class="visually-hidden">Show password</span>
+                                    </button>
+                                </div>
+                                <?= $errors('password') ?>
+                                <?php if (! $isNew) : ?>
+                                    <div class="form-text">Leave blank to keep their current password.</div>
+                                <?php endif ?>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <?= $this->formCheckbox($form->get('active')) ?>
+                                    <label class="form-check-label" for="active">Can log in</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h5 class="card-title">Sites <span>| for viewers</span></h5>
+                        <?php if ($siteOptions === []) : ?>
+                            <p class="text-body-secondary">There are no sites yet.</p>
+                        <?php else : ?>
+                            <fieldset>
+                                <legend class="visually-hidden">Sites they can see</legend>
+                                <?= $this->formMultiCheckbox($form->get('sites')) ?>
+                            </fieldset>
+                        <?php endif ?>
+
+                        <div class="d-flex gap-2 mt-4">
+                            <?= $this->formHidden($form->get('csrf')) ?>
+                            <?= $this->formSubmit($form->get('submit')) ?>
+                            <a class="btn btn-outline-secondary" href="<?= $this->url('users') ?>">Cancel</a>
+                        </div>
+                    <?= $this->form()->closeTag() ?>
+
+                    <?php if (! $isNew) : ?>
+                        <hr class="my-4">
+                        <?php if ($whyNotRemovable === null) : ?>
+                            <form method="post" action="<?= $this->url('user-delete', ['id' => $id]) ?>"
+                                  data-confirm="<?= $this->escapeHtmlAttr(sprintf(
+                                      '%s will be deleted and can no longer log in. Are you sure?',
+                                      $user->getDisplayName()
+                                  )) ?>">
+                                <input type="hidden" name="csrf" value="<?= $this->escapeHtmlAttr($deleteToken) ?>">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-trash me-1"></i> Delete User
+                                </button>
+                            </form>
+                        <?php else : ?>
+                            <p class="small text-body-secondary mb-0">
+                                This user cannot be deleted. <?= $this->escapeHtml($whyNotRemovable) ?>
+                            </p>
+                        <?php endif ?>
+                    <?php endif ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

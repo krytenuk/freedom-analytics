@@ -1,0 +1,23 @@
+<?php
+/**
+ * The title and breadcrumbs of a page that is not a report
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var string $heading
+ * @var array<string, string> $crumbs Optional links before the heading, url => label
+ */
+
+$crumbs = $crumbs ?? [];
+?>
+<div class="pagetitle">
+    <h1><?= $this->escapeHtml($heading) ?></h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="<?= $this->url('dashboard') ?>">Home</a></li>
+            <?php foreach ($crumbs as $url => $label) : ?>
+                <li class="breadcrumb-item"><a href="<?= $this->escapeHtmlAttr($url) ?>"><?= $this->escapeHtml($label) ?></a></li>
+            <?php endforeach ?>
+            <li class="breadcrumb-item active"><?= $this->escapeHtml($heading) ?></li>
+        </ol>
+    </nav>
+</div>

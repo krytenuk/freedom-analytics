@@ -1,0 +1,103 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var Admin\Report\ReportContext $context
+ * @var App\Entity\Page $page
+ * @var array<string, int|float> $summary
+ * @var list<array<string, mixed>> $trend
+ * @var list<array{page_id: int, path: string, title: string|null, count: int}> $previousPages
+ * @var list<array{page_id: int, path: string, title: string|null, count: int}> $nextPages
+ */
+
+use Admin\View\ChartData;
+use Admin\View\Format;
+
+$this->layout()->setVariables(['title' => 'Page', 'activeNav' => 'report:pages']);
+
+$stat = fn (string $label, string $value): string => sprintf(
+    '<div class="col-6 col-md-3"><div class="border rounded p-3 h-100"><div class="small text-body-secondary">%s</div>'
+    . '<div class="fs-4 fw-semibold">%s</div></div></div>',
+    $this->escapeHtml($label),
+    $this->escapeHtml($value)
+);
+
+$neighbours = function (array $pages, string $empty): string {
+    if ($pages === []) {
+        return '<p class="text-body-secondary mb-0">' . $this->escapeHtml($empty) . '</p>';
+    }
+
+    $html = '<table class="table table-borderless table-hover align-middle mb-0"><tbody>';
+    foreach ($pages as $neighbour) {
+        $html .= sprintf(
+            '<tr><td class="text-break"><a href="%s">%s</a>%s</td><td class="text-end">%s</td></tr>',
+            $this->url('page', ['id' => $neighbour['page_id']]),
+            $this->escapeHtml($neighbour['path']),
+            $neighbour['title'] === null ? ''
+                : '<span class="d-block small text-body-secondary">' . $this->escapeHtml($neighbour['title']) . '</span>',
+            Format::number($neighbour['count'])
+        );
+    }
+
+    return $html . '</tbody></table>';
+};
+?>
+<?= $this->partial('admin::partial/report-header', [
+    'heading' => $page->getTitle() ?? $page->getPath(),
+    'context' => $context,
+    'crumbs'  => [$this->url('report', ['id' => 'pages']) => 'Pages'],
+]) ?>
+
+<section class="section">
+    <p class="text-break">
+        <a href="<?= $this->escapeHtmlAttr($page->getUrl()) ?>" target="_blank" rel="noopener noreferrer">
+            <?= $this->escapeHtml($page->getUrl()) ?> <i class="bi bi-box-arrow-up-right small"></i>
+        </a>
+    </p>
+
+    <div class="card">
+        <div class="card-body pt-3">
+            <div class="row g-3">
+                <?= $stat('Page Views', Format::number($summary['pageviews'])) ?>
+                <?= $stat('Unique Page Views', Format::number($summary['unique_pageviews'])) ?>
+                <?= $stat('Avg. Time on Page', Format::duration($summary['avg_time_on_page'])) ?>
+                <?= $stat('Events', Format::number($summary['events'])) ?>
+                <?= $stat('Entrances', Format::number($summary['entrances'])) ?>
+                <?= $stat('Bounce Rate', Format::percent($summary['bounce_rate'])) ?>
+                <?= $stat('Exits', Format::number($summary['exits'])) ?>
+                <?= $stat('Exit Rate', Format::percent($summary['exit_rate'])) ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Page Views <span>| each day</span></h5>
+            <?= $this->partial('admin::partial/chart', [
+                'id'     => 'page-trend',
+                'type'   => 'trend',
+                'height' => 280,
+                'label'  => 'Page views each day',
+                'data'   => ChartData::trend($trend, ['pageviews' => 'Page Views', 'unique_pageviews' => 'Unique Page Views']),
+            ]) ?>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Came From <span>| the page before, in the same visit</span></h5>
+                    <?= $neighbours($previousPages, 'Every view of this page began a visit.') ?>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Went To <span>| the page after, in the same visit</span></h5>
+                    <?= $neighbours($nextPages, 'Every visit ended on this page.') ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

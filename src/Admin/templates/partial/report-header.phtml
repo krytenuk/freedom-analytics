@@ -1,0 +1,68 @@
+<?php
+/**
+ * The title of a report page, with the period form. The site is chosen in the page header.
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var string $heading
+ * @var Admin\Report\ReportContext $context
+ * @var array<string, string> $crumbs Optional links before the heading, url => label
+ */
+
+use Admin\Report\Period;
+
+$period = $context->period;
+$crumbs = $crumbs ?? [];
+?>
+<div class="pagetitle d-flex flex-wrap justify-content-between align-items-end gap-2">
+    <div>
+        <h1><?= $this->escapeHtml($heading) ?></h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="<?= $this->url('dashboard') ?>">
+                    <?= $this->escapeHtml($context->site->getName()) ?>
+                </a></li>
+                <?php foreach ($crumbs as $url => $label) : ?>
+                    <li class="breadcrumb-item"><a href="<?= $this->escapeHtmlAttr($url) ?>"><?= $this->escapeHtml($label) ?></a></li>
+                <?php endforeach ?>
+                <li class="breadcrumb-item active"><?= $this->escapeHtml($heading) ?></li>
+            </ol>
+        </nav>
+    </div>
+
+    <form class="period-form d-flex flex-wrap align-items-center gap-2" method="get" action="">
+        <?php if (count($context->sites) > 1) : ?>
+            <label class="visually-hidden" for="period-site">Site</label>
+            <select class="form-select form-select-sm d-md-none" id="period-site" name="site" data-autosubmit>
+                <?php foreach ($context->sites as $site) : ?>
+                    <option value="<?= (int) $site->getId() ?>"<?= $site === $context->site ? ' selected' : '' ?>>
+                        <?= $this->escapeHtml($site->getName()) ?>
+                    </option>
+                <?php endforeach ?>
+            </select>
+        <?php endif ?>
+        <label class="visually-hidden" for="period">Period</label>
+        <select class="form-select form-select-sm w-auto" id="period" name="period" data-period-select>
+            <?php foreach (Period::PRESETS as $key => $label) : ?>
+                <option value="<?= $key ?>"<?= $key === $period->key ? ' selected' : '' ?>><?= $this->escapeHtml($label) ?></option>
+            <?php endforeach ?>
+        </select>
+        <span class="d-flex align-items-center gap-1" data-custom-range<?= $period->key === 'custom' ? '' : ' hidden' ?>>
+            <label class="visually-hidden" for="period-from">From</label>
+            <input type="date" class="form-control form-control-sm" id="period-from" name="from"
+                   value="<?= $period->from->format('Y-m-d') ?>">
+            <span class="text-body-secondary">to</span>
+            <label class="visually-hidden" for="period-to">To</label>
+            <input type="date" class="form-control form-control-sm" id="period-to" name="to"
+                   value="<?= $period->to->format('Y-m-d') ?>">
+        </span>
+        <button type="submit" class="btn btn-sm btn-primary" data-period-apply>Apply</button>
+    </form>
+</div>
+<p class="small text-body-secondary mb-3">
+    <i class="bi bi-calendar3 me-1"></i>
+    <?= $this->escapeHtml($period->from->format('j M Y')) ?>
+    <?php if ($period->from != $period->to) : ?>
+        – <?= $this->escapeHtml($period->to->format('j M Y')) ?>
+    <?php endif ?>
+    (<?= $period->getDays() ?> day<?= $period->getDays() === 1 ? '' : 's' ?>)
+</p>

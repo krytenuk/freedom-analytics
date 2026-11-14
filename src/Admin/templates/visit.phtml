@@ -1,0 +1,145 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var Admin\Report\ReportContext $context
+ * @var App\Entity\Visit $visit
+ * @var list<array{type: string, at: DateTimeImmutable, pageview?: App\Entity\Pageview, event?: App\Entity\Event}> $timeline
+ * @var list<App\Entity\Visit> $history
+ * @var string|null $country
+ */
+
+use Admin\View\Format;
+
+$this->layout()->setVariables(['title' => 'Visit', 'activeNav' => 'visits']);
+
+$row = function (string $label, ?string $value, bool $html = false): string {
+    if ($value === null || $value === '') {
+        $value = '<span class="text-body-secondary">Unknown</span>';
+        $html  = true;
+    }
+
+    return sprintf(
+        '<dt class="col-sm-5">%s</dt><dd class="col-sm-7 text-break">%s</dd>',
+        $this->escapeHtml($label),
+        $html ? $value : $this->escapeHtml($value)
+    );
+};
+$started = $visit->getStartedAt();
+?>
+<?= $this->partial('admin::partial/report-header', [
+    'heading' => 'Visit on ' . $started->format('j M Y, H:i'),
+    'context' => $context,
+    'crumbs'  => [$this->url('visits') => 'Latest Visits'],
+]) ?>
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">The Visit</h5>
+                    <dl class="row mb-0">
+                        <?= $row('Started', $started->format('l j F Y, H:i:s')) ?>
+                        <?= $row('Length', Format::duration($visit->getDuration())) ?>
+                        <?= $row('Page views', (string) $visit->getNumPageviews()) ?>
+                        <?= $row('Events', (string) $visit->getNumEvents()) ?>
+                        <?= $row('Bounced', $visit->isBounce() ? 'Yes' : 'No') ?>
+                        <?= $row('Came from', $visit->getMediumLabel()) ?>
+                        <?= $row('Source', $visit->getSource()) ?>
+                        <?php if ($visit->getCampaign() !== null) : ?>
+                            <?= $row('Campaign', $visit->getCampaign()) ?>
+                        <?php endif ?>
+                        <?php if ($visit->getSearchTerms() !== null) : ?>
+                            <?= $row('Search terms', $visit->getSearchTerms()) ?>
+                        <?php endif ?>
+                        <?php if ($visit->getReferrerUrl() !== null) : ?>
+                            <?= $row('Referrer', sprintf(
+                                '<a href="%s" target="_blank" rel="noopener noreferrer nofollow">%s</a>',
+                                $this->escapeHtmlAttr($visit->getReferrerUrl()),
+                                $this->escapeHtml($visit->getReferrerUrl())
+                            ), true) ?>
+                        <?php endif ?>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">The Visitor</h5>
+                    <dl class="row mb-0">
+                        <?= $row('Visit number', $visit->isNewVisitor() ? '1 (new visitor)' : (string) $visit->getVisitNumber()) ?>
+                        <?php if ($visit->getDaysSinceLastVisit() !== null) : ?>
+                            <?= $row('Days since last visit', (string) $visit->getDaysSinceLastVisit()) ?>
+                        <?php endif ?>
+                        <?= $row('First seen', $visit->getVisitor()->getFirstSeenAt()->format('j M Y, H:i')) ?>
+                        <?= $row('Country', $country) ?>
+                        <?= $row('Language', $visit->getLanguage()) ?>
+                        <?= $row('Browser', trim($visit->getBrowser() . ' ' . $visit->getBrowserVersion())) ?>
+                        <?= $row('Operating system', trim($visit->getOs() . ' ' . $visit->getOsVersion())) ?>
+                        <?= $row('Device', ucfirst((string) $visit->getDeviceType())) ?>
+                        <?= $row('Screen', $visit->getScreenResolution()) ?>
+                        <?= $row('IP address', $visit->getIpAddress()) ?>
+                    </dl>
+                    <?php if ($visit->getUserAgent() !== null) : ?>
+                        <p class="small text-body-secondary font-monospace text-break mt-3 mb-0"><?= $this->escapeHtml($visit->getUserAgent()) ?></p>
+                    <?php endif ?>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Click Stream <span>| in order</span></h5>
+                    <div class="activity">
+                        <?php foreach ($timeline as $item) : ?>
+                            <div class="activity-item d-flex">
+                                <div class="activite-label"><?= $this->escapeHtml($item['at']->format('H:i:s')) ?></div>
+                                <?php if ($item['type'] === 'pageview') : ?>
+                                    <?php $pageview = $item['pageview'] ?>
+                                    <i class="bi bi-circle-fill activity-badge text-primary align-self-start"></i>
+                                    <div class="activity-content">
+                                        <a href="<?= $this->url('page', ['id' => $pageview->getPage()->getId()]) ?>" class="text-break">
+                                            <?= $this->escapeHtml($pageview->getPage()->getPath()) ?>
+                                        </a>
+                                        <?php if ($pageview->getPage()->getTitle() !== null) : ?>
+                                            <span class="d-block small text-body-secondary"><?= $this->escapeHtml($pageview->getPage()->getTitle()) ?></span>
+                                        <?php endif ?>
+                                        <?php if ($pageview->getTimeOnPage() !== null) : ?>
+                                            <span class="d-block small text-body-secondary">
+                                                <i class="bi bi-clock"></i> <?= Format::duration($pageview->getTimeOnPage()) ?> on page
+                                            </span>
+                                        <?php endif ?>
+                                    </div>
+                                <?php else : ?>
+                                    <?php $event = $item['event'] ?>
+                                    <i class="bi bi-lightning-fill activity-badge text-warning align-self-start"></i>
+                                    <div class="activity-content">
+                                        <span class="badge bg-warning-subtle text-warning-emphasis">Event</span>
+                                        <strong><?= $this->escapeHtml($event->getCategory()) ?></strong> /
+                                        <?= $this->escapeHtml($event->getAction()) ?>
+                                        <?php if ($event->getLabel() !== null) : ?>
+                                            <span class="d-block small text-body-secondary text-break"><?= $this->escapeHtml($event->getLabel()) ?></span>
+                                        <?php endif ?>
+                                        <?php if ($event->getValue() !== null) : ?>
+                                            <span class="d-block small text-body-secondary">Value: <?= Format::decimal($event->getValue()) ?></span>
+                                        <?php endif ?>
+                                    </div>
+                                <?php endif ?>
+                            </div>
+                        <?php endforeach ?>
+                    </div>
+                </div>
+            </div>
+
+            <?php if ($history !== []) : ?>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">This Visitor's Other Visits</h5>
+                        <?= $this->partial('admin::partial/visit-table', ['visits' => $history]) ?>
+                    </div>
+                </div>
+            <?php endif ?>
+        </div>
+    </div>
+</section>

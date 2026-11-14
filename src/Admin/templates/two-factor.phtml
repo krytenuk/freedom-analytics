@@ -1,0 +1,14 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ *
+ * The page's variables from TwoFactorSettingsHandler are passed on to the shared partial, which lists them.
+ */
+
+$this->layout()->setVariables(['title' => 'Two Factor Authentication', 'activeNav' => 'two-factor']);
+?>
+<?= $this->partial('admin::partial/page-title', ['heading' => 'Two Factor Authentication']) ?>
+<?= $this->partial('admin::partial/two-factor-settings', [
+    'action'    => $this->url('two-factor'),
+    'doneRoute' => 'dashboard',
+] + $this->vars()->getArrayCopy()) ?>

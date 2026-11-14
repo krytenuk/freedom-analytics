@@ -1,0 +1,254 @@
+<?php
+/**
+ * The logged-in layout, from the NiceAdmin template. Its assets are in public/assets/admin.
+ *
+ * Pages set these with $this->layout()->setVariables([...]):
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var string $content
+ * @var string|null $title The page title, before " - Freedom Analytics"
+ * @var string|null $activeNav The sidebar link to highlight: a route name, or "report:<id>" for a report
+ *
+ * Set by Admin\Middleware\AdminLayoutMiddleware:
+ * @var App\Entity\User $currentUser
+ * @var string $logoutToken
+ *
+ * Set by Admin\Middleware\ReportContextMiddleware, on report pages:
+ * @var Admin\Report\ReportContext|null $context
+ */
+
+use Admin\Report\Reports;
+
+$assets    = '/assets/admin';
+$activeNav = $activeNav ?? '';
+
+/**
+ * Sidebar links. NiceAdmin draws links with the "collapsed" class as not current.
+ */
+$navLink = fn (string $route, string $icon, string $label, array $params = [], ?string $key = null): string => sprintf(
+    '<a class="nav-link%s" href="%s"%s><i class="bi %s"></i><span>%s</span></a>',
+    ($key ?? $route) === $activeNav ? '' : ' collapsed',
+    $this->escapeHtmlAttr($this->url($route, $params)),
+    ($key ?? $route) === $activeNav ? ' aria-current="page"' : '',
+    $this->escapeHtmlAttr($icon),
+    $this->escapeHtml($label)
+);
+
+// Report groups open in the sidebar when one of their pages is current
+$groupLinks = [
+    'Visitors' => ['visitors' => 'Overview', 'visits' => 'Latest Visits'],
+];
+?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta name="robots" content="noindex, nofollow">
+
+    <title><?= $this->escapeHtml(($title ?? 'Dashboard') . ' - Freedom Analytics') ?></title>
+    <?= $this->headMeta() ?>
+
+    <!-- Sets the light or dark theme before the page is drawn, so it does not flash white -->
+    <script src="<?= $assets ?>/js/theme.js"></script>
+
+    <link href="/assets/img/favicon.png" rel="icon">
+    <link href="/assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+
+    <link href="https://fonts.gstatic.com" rel="preconnect">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i"
+          rel="stylesheet">
+
+    <link href="<?= $assets ?>/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="<?= $assets ?>/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+
+    <link href="<?= $assets ?>/css/style.css" rel="stylesheet">
+    <link href="<?= $assets ?>/css/dark.css" rel="stylesheet">
+    <link href="/assets/css/analytics.css" rel="stylesheet">
+    <?= $this->headLink() ?>
+
+    <!-- =======================================================
+    * Template Name: NiceAdmin
+    * Template URL: https://bootstrapmade.com/nice-admin-bootstrap-admin-html-template/
+    * Updated: Apr 20 2024 with Bootstrap v5.3.3
+    * Author: BootstrapMade.com
+    * License: https://bootstrapmade.com/license/
+    ======================================================== -->
+</head>
+
+<body>
+
+<header id="header" class="header fixed-top d-flex align-items-center">
+
+    <div class="d-flex align-items-center justify-content-between">
+        <a href="<?= $this->url('dashboard') ?>" class="logo d-flex align-items-center">
+            <img src="/assets/img/logo.webp" alt="">
+            <span class="d-none d-lg-block">Analytics</span>
+        </a>
+        <i class="bi bi-list toggle-sidebar-btn"></i>
+    </div>
+
+    <?php if (isset($context) && count($context->sites) > 1) : ?>
+        <!-- Switches the site every report shows. The choice is remembered in the session. -->
+        <form class="d-none d-md-flex ms-3 align-items-center" method="get" action="">
+            <label class="visually-hidden" for="header-site">Site</label>
+            <select class="form-select form-select-sm" id="header-site" name="site" data-autosubmit>
+                <?php foreach ($context->sites as $site) : ?>
+                    <option value="<?= (int) $site->getId() ?>"<?= $site === $context->site ? ' selected' : '' ?>>
+                        <?= $this->escapeHtml($site->getName()) ?>
+                    </option>
+                <?php endforeach ?>
+            </select>
+            <noscript><button type="submit" class="btn btn-sm btn-outline-primary ms-1">Go</button></noscript>
+        </form>
+    <?php endif ?>
+
+    <nav class="header-nav ms-auto">
+        <ul class="d-flex align-items-center">
+
+            <li class="nav-item dropdown">
+                <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown" title="Theme" aria-label="Theme">
+                    <i class="bi bi-circle-half" data-theme-icon></i>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
+                    <li>
+                        <button type="button" class="dropdown-item d-flex align-items-center" data-theme-value="light">
+                            <i class="bi bi-sun"></i><span>Light</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" class="dropdown-item d-flex align-items-center" data-theme-value="dark">
+                            <i class="bi bi-moon-stars"></i><span>Dark</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" class="dropdown-item d-flex align-items-center" data-theme-value="auto">
+                            <i class="bi bi-circle-half"></i><span>Automatic</span>
+                        </button>
+                    </li>
+                </ul>
+            </li>
+
+            <li class="nav-item dropdown pe-3">
+                <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle fs-4"></i>
+                    <span class="d-none d-md-block dropdown-toggle ps-2">
+                        <?= $this->escapeHtml($currentUser->getDisplayName()) ?>
+                    </span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
+                    <li class="dropdown-header">
+                        <h6><?= $this->escapeHtml($currentUser->getDisplayName()) ?></h6>
+                        <span><?= $this->escapeHtml($currentUser->getRoleLabel()) ?></span>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center" href="<?= $this->url('profile') ?>">
+                            <i class="bi bi-person"></i><span>My Profile</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center" href="<?= $this->url('two-factor') ?>">
+                            <i class="bi bi-shield-lock"></i><span>Two Factor Authentication</span>
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <!-- Logging out needs a POST with a token, so another site cannot log the user out -->
+                        <form action="<?= $this->url('logout') ?>" method="post">
+                            <input type="hidden" name="csrf" value="<?= $this->escapeHtmlAttr($logoutToken) ?>">
+                            <button type="submit" class="dropdown-item d-flex align-items-center">
+                                <i class="bi bi-box-arrow-right"></i><span>Sign Out</span>
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </li>
+
+        </ul>
+    </nav>
+
+</header>
+
+<aside id="sidebar" class="sidebar">
+
+    <ul class="sidebar-nav" id="sidebar-nav">
+
+        <li class="nav-item"><?= $navLink('dashboard', 'bi-grid', 'Dashboard') ?></li>
+
+        <?php foreach (Reports::navigation() as $group => $reports) : ?>
+            <?php
+            $groupId = 'nav-' . strtolower($group);
+            $keys    = array_merge(
+                array_keys($groupLinks[$group] ?? []),
+                array_map(static fn (string $id): string => 'report:' . $id, array_keys($reports))
+            );
+            $open    = in_array($activeNav, $keys, true);
+            ?>
+            <li class="nav-item">
+                <a class="nav-link<?= $open ? '' : ' collapsed' ?>" data-bs-target="#<?= $groupId ?>"
+                   data-bs-toggle="collapse" href="#" aria-expanded="<?= $open ? 'true' : 'false' ?>">
+                    <i class="bi <?= Reports::GROUPS[$group] ?>"></i><span><?= $this->escapeHtml($group) ?></span>
+                    <i class="bi bi-chevron-down ms-auto"></i>
+                </a>
+                <ul id="<?= $groupId ?>" class="nav-content collapse<?= $open ? ' show' : '' ?>"
+                    data-bs-parent="#sidebar-nav">
+                    <?php foreach ($groupLinks[$group] ?? [] as $route => $label) : ?>
+                        <li>
+                            <a href="<?= $this->url($route) ?>"<?= $activeNav === $route ? ' class="active"' : '' ?>>
+                                <i class="bi bi-circle"></i><span><?= $this->escapeHtml($label) ?></span>
+                            </a>
+                        </li>
+                    <?php endforeach ?>
+                    <?php foreach ($reports as $id => $label) : ?>
+                        <li>
+                            <a href="<?= $this->url('report', ['id' => $id]) ?>"<?= $activeNav === 'report:' . $id ? ' class="active"' : '' ?>>
+                                <i class="bi bi-circle"></i><span><?= $this->escapeHtml($label) ?></span>
+                            </a>
+                        </li>
+                    <?php endforeach ?>
+                </ul>
+            </li>
+        <?php endforeach ?>
+
+        <?php if ($currentUser->isAdmin()) : ?>
+            <li class="nav-heading">Administration</li>
+            <li class="nav-item"><?= $navLink('sites', 'bi-globe', 'Sites') ?></li>
+            <li class="nav-item"><?= $navLink('users', 'bi-people', 'Users') ?></li>
+        <?php endif ?>
+
+        <li class="nav-heading">Account</li>
+        <li class="nav-item"><?= $navLink('profile', 'bi-person', 'My Profile') ?></li>
+        <li class="nav-item"><?= $navLink('two-factor', 'bi-shield-lock', 'Two Factor Authentication') ?></li>
+
+    </ul>
+
+</aside>
+
+<main id="main" class="main">
+    <?= $content ?>
+</main>
+
+<footer id="footer" class="footer">
+    <div class="copyright">
+        &copy; Copyright <strong><span>Freedom Web Services</span></strong>. All Rights Reserved
+    </div>
+    <div class="credits">
+        <!-- The free NiceAdmin licence needs this link: https://bootstrapmade.com/license/ -->
+        Designed by <a href="https://bootstrapmade.com/">BootstrapMade</a>
+    </div>
+</footer>
+
+<a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i
+            class="bi bi-arrow-up-short"></i></a>
+
+<script src="<?= $assets ?>/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="<?= $assets ?>/vendor/apexcharts/apexcharts.min.js"></script>
+<script src="<?= $assets ?>/js/main.js"></script>
+<script src="/assets/js/analytics.js"></script>
+<?= $this->inlineScript() ?>
+
+</body>
+
+</html>

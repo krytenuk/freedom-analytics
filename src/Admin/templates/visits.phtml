@@ -1,0 +1,33 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var Admin\Report\ReportContext $context
+ * @var list<App\Entity\Visit> $visits
+ * @var int $total
+ * @var int $page
+ * @var int $pages
+ */
+
+use Admin\View\Format;
+
+$this->layout()->setVariables(['title' => 'Latest Visits', 'activeNav' => 'visits']);
+?>
+<?= $this->partial('admin::partial/report-header', ['heading' => 'Latest Visits', 'context' => $context]) ?>
+
+<section class="section">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Visits <span>| <?= Format::number($total) ?>, newest first</span></h5>
+            <?= $this->partial('admin::partial/visit-table', ['visits' => $visits]) ?>
+            <div class="mt-3">
+                <?= $this->partial('admin::partial/pagination', [
+                    'url'   => $this->url('visits'),
+                    'query' => [],
+                    'page'  => $page,
+                    'pages' => $pages,
+                    'label' => 'Visit pages',
+                ]) ?>
+            </div>
+        </div>
+    </div>
+</section>

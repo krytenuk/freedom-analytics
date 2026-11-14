@@ -1,0 +1,192 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var Admin\Report\ReportContext $context
+ * @var array<string, int|float> $kpis
+ * @var array<string, int|float> $previousKpis
+ * @var list<array<string, mixed>> $trend
+ * @var int $activeNow
+ * @var array<string, mixed> $mediums
+ * @var array<string, mixed> $devices
+ * @var array<string, mixed> $topPages
+ * @var array<string, mixed> $referrers
+ * @var array<string, mixed> $countries
+ * @var array<string, mixed> $events
+ * @var list<App\Entity\Visit> $latestVisits
+ */
+
+use Admin\View\ChartData;
+
+$this->layout()->setVariables(['title' => 'Dashboard', 'activeNav' => 'dashboard']);
+
+$kpi = fn (string $label, string $icon, string $key, string $format, bool $lowerIsBetter = false): string =>
+    $this->partial('admin::partial/kpi', [
+        'label'         => $label,
+        'icon'          => $icon,
+        'value'         => $kpis[$key],
+        'previous'      => $previousKpis[$key],
+        'format'        => $format,
+        'lowerIsBetter' => $lowerIsBetter,
+    ]);
+
+$moreLink = fn (string $report, string $text = 'View full report'): string => sprintf(
+    '<a class="small" href="%s">%s <i class="bi bi-arrow-right"></i></a>',
+    $this->url('report', ['id' => $report]),
+    $this->escapeHtml($text)
+);
+?>
+<?= $this->partial('admin::partial/report-header', ['heading' => 'Dashboard', 'context' => $context]) ?>
+
+<section class="section dashboard">
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-4 col-xxl-2"><?= $kpi('Visits', 'bi-door-open', 'visits', 'number') ?></div>
+        <div class="col-6 col-md-4 col-xxl-2"><?= $kpi('Visitors', 'bi-people', 'visitors', 'number') ?></div>
+        <div class="col-6 col-md-4 col-xxl-2"><?= $kpi('Page Views', 'bi-file-earmark-text', 'pageviews', 'number') ?></div>
+        <div class="col-6 col-md-4 col-xxl-2"><?= $kpi('Pages / Visit', 'bi-layers', 'pages_per_visit', 'decimal') ?></div>
+        <div class="col-6 col-md-4 col-xxl-2"><?= $kpi('Avg. Visit', 'bi-stopwatch', 'avg_duration', 'duration') ?></div>
+        <div class="col-6 col-md-4 col-xxl-2"><?= $kpi('Bounce Rate', 'bi-box-arrow-left', 'bounce_rate', 'percent', true) ?></div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-9">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Site Traffic <span>| <?= $this->escapeHtml($context->period->getLabel()) ?></span></h5>
+                    <?= $this->partial('admin::partial/chart', [
+                        'id'     => 'trend',
+                        'type'   => 'trend',
+                        'height' => 320,
+                        'label'  => 'Page views and visits each day',
+                        'data'   => ChartData::trend($trend, ['pageviews' => 'Page Views', 'visits' => 'Visits']),
+                    ]) ?>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Right Now</h5>
+                    <div class="display-5 fw-semibold"><?= (int) $activeNow ?></div>
+                    <p class="small text-body-secondary mb-3">
+                        visitor<?= $activeNow === 1 ? '' : 's' ?> active in the last 5 minutes
+                    </p>
+                    <div class="small">
+                        <div class="d-flex justify-content-between border-top py-2">
+                            <span>New visits</span>
+                            <strong><?= \Admin\View\Format::percent($kpis['new_visit_rate']) ?></strong>
+                        </div>
+                        <div class="d-flex justify-content-between border-top py-2">
+                            <span>Returning visits</span>
+                            <strong><?= \Admin\View\Format::percent($kpis['visits'] > 0 ? 1 - $kpis['new_visit_rate'] : 0) ?></strong>
+                        </div>
+                        <div class="d-flex justify-content-between border-top py-2">
+                            <span>Events</span>
+                            <strong><?= \Admin\View\Format::number($kpis['events']) ?></strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Traffic Sources</h5>
+                    <?= $this->partial('admin::partial/chart', [
+                        'id'     => 'mediums',
+                        'type'   => 'donut',
+                        'height' => 260,
+                        'label'  => 'Visits by traffic source',
+                        'data'   => ChartData::donut($mediums, 'Visits'),
+                    ]) ?>
+                    <?= $this->partial('admin::partial/dimension-table', [
+                        'result' => $mediums, 'label' => 'Medium', 'columns' => ['visits', 'bounce_rate'],
+                    ]) ?>
+                    <div class="text-end mt-2"><?= $moreLink('traffic-sources') ?></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Devices</h5>
+                    <?= $this->partial('admin::partial/chart', [
+                        'id'     => 'devices',
+                        'type'   => 'donut',
+                        'height' => 260,
+                        'label'  => 'Visits by device',
+                        'data'   => ChartData::donut($devices, 'Visits'),
+                    ]) ?>
+                    <?= $this->partial('admin::partial/dimension-table', [
+                        'result' => $devices, 'label' => 'Device', 'columns' => ['visits', 'bounce_rate'],
+                    ]) ?>
+                    <div class="text-end mt-2"><?= $moreLink('devices') ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Top Pages</h5>
+                    <?= $this->partial('admin::partial/dimension-table', [
+                        'result'  => $topPages,
+                        'label'   => 'Page',
+                        'link'    => 'page',
+                        'columns' => ['pageviews', 'unique_pageviews'],
+                    ]) ?>
+                    <div class="text-end mt-2"><?= $moreLink('pages') ?></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Top Referring Sites</h5>
+                    <?= $this->partial('admin::partial/dimension-table', [
+                        'result' => $referrers, 'label' => 'Site', 'link' => 'host', 'columns' => ['visits'],
+                    ]) ?>
+                    <div class="text-end mt-2"><?= $moreLink('referring-sites') ?></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Top Countries</h5>
+                    <?= $this->partial('admin::partial/dimension-table', [
+                        'result' => $countries, 'label' => 'Country', 'columns' => ['visits'],
+                    ]) ?>
+                    <div class="text-end mt-2"><?= $moreLink('locations') ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Latest Visits</h5>
+                    <?= $this->partial('admin::partial/visit-table', ['visits' => $latestVisits]) ?>
+                    <div class="text-end mt-2">
+                        <a class="small" href="<?= $this->url('visits') ?>">View all visits <i class="bi bi-arrow-right"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Top Events</h5>
+                    <?= $this->partial('admin::partial/dimension-table', [
+                        'result' => $events, 'label' => 'Action', 'columns' => ['events'],
+                    ]) ?>
+                    <div class="text-end mt-2"><?= $moreLink('events') ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

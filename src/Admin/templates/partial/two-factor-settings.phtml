@@ -1,0 +1,104 @@
+<?php
+/**
+ * The two factor settings page body, shared by the admin and user areas. Its form posts back to the page it is on.
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var Admin\Forms\TwoFactorCodeForm $form
+ * @var string $action The URL the form posts to
+ * @var string $doneRoute Where the Done button goes after the recovery codes are shown
+ * @var bool $paired
+ * @var string|null $secret
+ * @var string|null $qrCode SVG markup
+ * @var int|null $codesLeft
+ * @var list<string>|null $recoveryCodes
+ * @var string|null $notice
+ * @var string|null $error
+ */
+
+use Admin\Handler\TwoFactorSettingsHandler;
+
+$this->headLink()->appendStylesheet('/assets/css/two-factor-code.css');
+$this->inlineScript()->appendFile('/assets/js/two-factor-code.js');
+
+$form
+    ->prepare()
+    ->setAttribute('action', $action)
+    ->setAttribute('method', 'post');
+
+$errorAttributes = ['class' => 'list-unstyled text-danger small mt-1 mb-0'];
+?>
+<section class="section">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body pt-3">
+                <?php if ($notice) : ?>
+                    <div class="alert alert-success" role="status"><?= $this->escapeHtml($notice) ?></div>
+                <?php endif ?>
+                <?php if ($error) : ?>
+                    <div class="alert alert-danger" role="alert"><?= $this->escapeHtml($error) ?></div>
+                <?php endif ?>
+
+                <?php if ($recoveryCodes) : ?>
+                    <h5 class="card-title">Your recovery codes</h5>
+                    <p>
+                        If you do not have your phone, you can log in with one of these instead of a code from your
+                        app. Each one works once. Keep them somewhere safe, such as a password manager.
+                        <strong>They will not be shown again.</strong>
+                    </p>
+                    <ul class="list-unstyled font-monospace fs-5 row row-cols-2 mb-4">
+                        <?php foreach ($recoveryCodes as $recoveryCode) : ?>
+                            <li class="col"><?= $this->escapeHtml($recoveryCode) ?></li>
+                        <?php endforeach ?>
+                    </ul>
+                    <p class="text-center">
+                        <a class="btn btn-primary" href="<?= $this->url($doneRoute) ?>">Done</a>
+                    </p>
+                <?php elseif ($paired) : ?>
+                    <p>
+                        Your authenticator app is set up. You have <strong><?= (int) $codesLeft ?></strong> unused
+                        recovery code(s) left.
+                    </p>
+                    <p>Enter a code from your app to make new recovery codes, or to remove the app.</p>
+                    <?= $this->form()->openTag($form) ?>
+                        <?= $this->partial('admin::partial/two-factor-code', ['form' => $form, 'recovery' => true]) ?>
+                        <?= $this->formElementErrors()->render($form->get('csrf'), $errorAttributes) ?>
+                        <div class="d-flex justify-content-center gap-2 mt-3">
+                            <?= $this->formHidden($form->get('csrf')) ?>
+                            <button type="submit" name="action" class="btn btn-primary"
+                                    value="<?= TwoFactorSettingsHandler::ACTION_REGENERATE ?>">
+                                New Recovery Codes
+                            </button>
+                            <button type="submit" name="action" class="btn btn-outline-danger"
+                                    value="<?= TwoFactorSettingsHandler::ACTION_UNPAIR ?>">
+                                Remove App
+                            </button>
+                        </div>
+                    <?= $this->form()->closeTag() ?>
+                <?php else : ?>
+                    <p>
+                        Scan this QR code with an authenticator app, such as Google Authenticator, Microsoft
+                        Authenticator or 1Password. You will then be asked for a code from the app each time you log in.
+                    </p>
+                    <div class="text-center my-4">
+                        <div class="d-inline-block bg-white p-3"><?= $qrCode ?></div>
+                    </div>
+                    <p class="small">
+                        If you cannot scan it, enter this key in the app instead:
+                        <code class="user-select-all"><?= $this->escapeHtml((string) $secret) ?></code>
+                    </p>
+                    <p>Then enter the 6 digit code the app shows.</p>
+                    <?= $this->form()->openTag($form) ?>
+                        <?= $this->partial('admin::partial/two-factor-code', ['form' => $form, 'recovery' => false]) ?>
+                        <?= $this->formElementErrors()->render($form->get('csrf'), $errorAttributes) ?>
+                        <div class="text-center mt-3">
+                            <?= $this->formHidden($form->get('csrf')) ?>
+                            <?= $this->formSubmit($form->get('submit')) ?>
+                        </div>
+                    <?= $this->form()->closeTag() ?>
+                <?php endif ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

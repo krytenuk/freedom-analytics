@@ -1,0 +1,65 @@
+<?php
+/**
+ * A list of visits, linking to each one's detail
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var list<App\Entity\Visit> $visits
+ */
+
+use Admin\View\Format;
+
+$deviceIcons = ['desktop' => 'bi-laptop', 'mobile' => 'bi-phone', 'tablet' => 'bi-tablet'];
+?>
+<?php if ($visits === []) : ?>
+    <p class="text-body-secondary mb-0">No visits in this period.</p>
+<?php else : ?>
+    <div class="table-responsive">
+        <table class="table table-borderless table-hover align-middle mb-0">
+            <thead>
+            <tr>
+                <th scope="col">Started</th>
+                <th scope="col">Came From</th>
+                <th scope="col">Entry Page</th>
+                <th scope="col" class="text-end">Pages</th>
+                <th scope="col" class="text-end">Length</th>
+                <th scope="col">Visitor</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($visits as $visit) : ?>
+                <tr>
+                    <td class="text-nowrap">
+                        <a href="<?= $this->url('visit', ['id' => $visit->getId()]) ?>">
+                            <?= $this->escapeHtml($visit->getStartedAt()->format('j M, H:i')) ?>
+                        </a>
+                    </td>
+                    <td>
+                        <?= $this->escapeHtml($visit->getMediumLabel()) ?>
+                        <?php if ($visit->getSource() !== null) : ?>
+                            <span class="small text-body-secondary d-block text-truncate" style="max-width: 14rem">
+                                <?= $this->escapeHtml($visit->getSource()) ?>
+                            </span>
+                        <?php endif ?>
+                    </td>
+                    <td class="text-break small"><?= $this->escapeHtml($visit->getEntryPage()?->getPath() ?? '') ?></td>
+                    <td class="text-end"><?= $visit->getNumPageviews() ?></td>
+                    <td class="text-end text-nowrap"><?= Format::duration($visit->getDuration()) ?></td>
+                    <td class="text-nowrap">
+                        <i class="bi <?= $deviceIcons[$visit->getDeviceType()] ?? 'bi-question-circle' ?>"
+                           title="<?= $this->escapeHtmlAttr(ucfirst((string) $visit->getDeviceType())) ?>"></i>
+                        <span class="small"><?= $this->escapeHtml(trim($visit->getBrowser() . ' · ' . $visit->getOs(), ' ·')) ?></span>
+                        <?php if ($visit->getCountry() !== null) : ?>
+                            <span class="badge bg-secondary-subtle text-body-secondary"><?= $this->escapeHtml($visit->getCountry()) ?></span>
+                        <?php endif ?>
+                        <?php if ($visit->isNewVisitor()) : ?>
+                            <span class="badge bg-primary-subtle text-primary-emphasis">New</span>
+                        <?php else : ?>
+                            <span class="badge bg-body-secondary text-body-secondary">Visit <?= $visit->getVisitNumber() ?></span>
+                        <?php endif ?>
+                    </td>
+                </tr>
+            <?php endforeach ?>
+            </tbody>
+        </table>
+    </div>
+<?php endif ?>

@@ -1,0 +1,47 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Doctrine ORM and Migrations console, e.g.:
+ *
+ *   docker exec freedom-analytics bin/doctrine orm:validate-schema
+ *   docker exec freedom-analytics bin/doctrine migrations:status
+ *   docker exec freedom-analytics bin/doctrine migrations:migrate
+ */
+
+declare(strict_types=1);
+
+use Doctrine\Migrations\DependencyFactory;
+use Doctrine\Migrations\Tools\Console\Command as MigrationsCommand;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Tools\Console\ConsoleRunner;
+use Doctrine\ORM\Tools\Console\EntityManagerProvider\SingleManagerProvider;
+use Psr\Container\ContainerInterface;
+
+chdir(dirname(__DIR__));
+require 'vendor/autoload.php';
+
+/** @var ContainerInterface $container */
+$container = require 'config/container.php';
+
+/** @var DependencyFactory $migrations */
+$migrations = $container->get(DependencyFactory::class);
+
+ConsoleRunner::run(
+    new SingleManagerProvider($container->get(EntityManagerInterface::class)),
+    [
+        new MigrationsCommand\CurrentCommand($migrations),
+        new MigrationsCommand\DiffCommand($migrations),
+        new MigrationsCommand\DumpSchemaCommand($migrations),
+        new MigrationsCommand\ExecuteCommand($migrations),
+        new MigrationsCommand\GenerateCommand($migrations),
+        new MigrationsCommand\LatestCommand($migrations),
+        new MigrationsCommand\ListCommand($migrations),
+        new MigrationsCommand\MigrateCommand($migrations),
+        new MigrationsCommand\RollupCommand($migrations),
+        new MigrationsCommand\StatusCommand($migrations),
+        new MigrationsCommand\SyncMetadataCommand($migrations),
+        new MigrationsCommand\UpToDateCommand($migrations),
+        new MigrationsCommand\VersionCommand($migrations),
+    ],
+);

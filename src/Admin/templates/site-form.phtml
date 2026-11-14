@@ -1,0 +1,89 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var Admin\Forms\SiteForm $form
+ * @var App\Entity\Site $site
+ */
+
+use Admin\Forms\SiteForm;
+
+$isNew = $site->getId() === null;
+$id    = $site->getId();
+
+$this->layout()->setVariables(['title' => $isNew ? 'Add Site' : 'Edit Site', 'activeNav' => 'sites']);
+
+$form
+    ->prepare()
+    ->setAttribute('method', 'post')
+    ->setAttribute('action', $isNew ? $this->url('site-add') : $this->url('site-edit', ['id' => $id]));
+$form->get('submit')->setValue($isNew ? 'Add Site' : 'Save Site');
+
+$errorAttributes = ['class' => 'list-unstyled invalid-feedback d-block small mt-1 mb-0'];
+$field = function (string $name, string $class = 'col-md-6', ?string $help = null) use ($form, $errorAttributes): string {
+    $element = $form->get($name);
+    if ($element->getMessages()) {
+        $element->setAttribute('class', $element->getAttribute('class') . ' is-invalid');
+    }
+    $element->setLabelAttributes(['class' => 'form-label']);
+
+    return sprintf(
+        '<div class="%s">%s%s%s%s</div>',
+        $class,
+        $this->formLabel($element),
+        $this->formElement($element),
+        $this->formElementErrors()->render($element, $errorAttributes),
+        $help === null ? '' : '<div class="form-text">' . $this->escapeHtml($help) . '</div>'
+    );
+};
+$check = fn (string $name, string $help): string => sprintf(
+    '<div class="form-check mb-2">%s<label class="form-check-label" for="%s">%s</label>'
+    . '<div class="form-text mt-0">%s</div></div>',
+    $this->formCheckbox($form->get($name)),
+    $name,
+    $this->escapeHtml((string) $form->get($name)->getLabel()),
+    $this->escapeHtml($help)
+);
+
+$cancelUrl = $isNew ? $this->url('sites') : $this->url('site', ['id' => $id]);
+?>
+<?= $this->partial('admin::partial/page-title', [
+    'heading' => $isNew ? 'Add Site' : 'Edit ' . $site->getName(),
+    'crumbs'  => [$this->url('sites') => 'Sites'],
+]) ?>
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body pt-3">
+                    <?php if ($form->get('csrf')->getMessages()) : ?>
+                        <div class="alert alert-danger" role="alert"><?= $this->escapeHtml(SiteForm::$responseMessages['csrf']) ?></div>
+                    <?php endif ?>
+
+                    <?= $this->form()->openTag($form) ?>
+                        <h5 class="card-title">Site</h5>
+                        <div class="row g-3">
+                            <?= $field('name') ?>
+                            <?= $field('domain', 'col-md-6', 'Its subdomains are included, and a leading www. is ignored.') ?>
+                            <?= $field('description', 'col-12') ?>
+                        </div>
+
+                        <h5 class="card-title">Collecting</h5>
+                        <?= $check('active', 'Turn this off to stop recording visits while keeping the reports.') ?>
+                        <?= $check('checkDomain', 'Stops other sites sending visits with this site\'s tracking code.') ?>
+                        <?= $check('respectDoNotTrack', 'Browsers send Do Not Track or Global Privacy Control when the visitor asks not to be tracked.') ?>
+                        <div class="row g-3 mt-1">
+                            <?= $field('excludedIps', 'col-md-8', 'Visits from these addresses are not recorded, such as your own. One per line.') ?>
+                        </div>
+
+                        <div class="d-flex gap-2 mt-4">
+                            <?= $this->formHidden($form->get('csrf')) ?>
+                            <?= $this->formSubmit($form->get('submit')) ?>
+                            <a class="btn btn-outline-secondary" href="<?= $cancelUrl ?>">Cancel</a>
+                        </div>
+                    <?= $this->form()->closeTag() ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,41 @@
+/* The boxes two-factor-code.js puts in place of the two factor code field */
+.two-factor-code-boxes {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.two-factor-code-boxes[hidden] {
+    display: none;
+}
+
+/* Boxes shrink to fit narrow columns, as a recovery code has 10 of them */
+.two-factor-code-boxes .form-control {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 3rem;
+    height: 3.5rem;
+    padding: 0;
+    font-size: 1.5rem;
+    text-align: center;
+}
+
+/* Splits the code into two groups, as authenticator apps and the recovery codes list show it */
+.two-factor-code-separator {
+    flex: none;
+    min-width: 0.25rem;
+    font-size: 1.5rem;
+    line-height: 1;
+    text-align: center;
+}
+
+@media (max-width: 359.98px) {
+    .two-factor-code-boxes {
+        gap: 0.25rem;
+    }
+
+    .two-factor-code-boxes .form-control {
+        height: 3rem;
+    }
+}

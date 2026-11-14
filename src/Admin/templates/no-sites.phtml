@@ -1,0 +1,38 @@
+<?php
+/**
+ * Shown on report pages to users who cannot see any site yet
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var bool $isAdmin
+ */
+
+$this->layout()->setVariables(['title' => 'Welcome', 'activeNav' => 'dashboard']);
+?>
+<?= $this->partial('admin::partial/page-title', ['heading' => 'Welcome']) ?>
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body pt-3">
+                    <?php if ($isAdmin) : ?>
+                        <h5 class="card-title">Add your first site</h5>
+                        <p>
+                            To start collecting, add the website you want to track. You will then get a short piece of
+                            tracking code to put on every page of it.
+                        </p>
+                        <a class="btn btn-primary" href="<?= $this->url('site-add') ?>">
+                            <i class="bi bi-plus-lg me-1"></i> Add a Site
+                        </a>
+                    <?php else : ?>
+                        <h5 class="card-title">No sites yet</h5>
+                        <p class="mb-0">
+                            You have not been given any sites to see yet. Please ask an administrator to give you
+                            access.
+                        </p>
+                    <?php endif ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

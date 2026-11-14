@@ -1,0 +1,46 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: freedom-analytics
+    ports:
+      - "8090:80"
+      - "1453:443"
+    volumes:
+      - .:/var/www/html
+    # Read by config/autoload/local.php, so the same file works from the host (127.0.0.1:13307) and in here
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mariadb:10.11
+    ports:
+      - "13307:3306"
+    container_name: freedom-analytics-db
+    # Credentials come from .env (not committed; see .env.dist). The application reads its own copy from
+    # config/autoload/local.php.
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:?Set MARIADB_DATABASE in .env}
+      MARIADB_USER: ${MARIADB_USER:?Set MARIADB_USER in .env}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?Set MARIADB_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  db-data:

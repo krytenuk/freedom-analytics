@@ -1,0 +1,9 @@
+.git
+.idea
+vendor
+.env
+data/cache/*
+!data/cache/.gitkeep
+.phpunit.cache
+.psalm-cache
+.phpcs-cache

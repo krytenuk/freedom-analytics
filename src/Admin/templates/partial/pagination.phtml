@@ -1,0 +1,49 @@
+<?php
+/**
+ * Previous, numbered and next page links, when there is more than one page. Long lists show the pages around the
+ * current one, with the first and last.
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var string $url The list's address, without a query
+ * @var array<string, string> $query Query parameters to keep, such as the sort and a search
+ * @var int $page
+ * @var int $pages
+ * @var string $label What the pages are of, for screen readers
+ */
+
+if ($pages <= 1) {
+    return;
+}
+
+$pageUrl = fn (int $number): string => $this->escapeHtmlAttr(
+    $url . '?' . http_build_query(['page' => $number] + $query)
+);
+
+$shown = array_unique(array_filter(
+    [1, $page - 2, $page - 1, $page, $page + 1, $page + 2, $pages],
+    static fn (int $number): bool => $number >= 1 && $number <= $pages
+));
+sort($shown);
+?>
+<nav aria-label="<?= $this->escapeHtmlAttr($label) ?>">
+    <ul class="pagination justify-content-center flex-wrap">
+        <li class="page-item<?= $page === 1 ? ' disabled' : '' ?>">
+            <a class="page-link" href="<?= $pageUrl(max(1, $page - 1)) ?>">Previous</a>
+        </li>
+        <?php $previous = 0 ?>
+        <?php foreach ($shown as $number) : ?>
+            <?php if ($number > $previous + 1) : ?>
+                <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+            <?php endif ?>
+            <li class="page-item<?= $number === $page ? ' active' : '' ?>">
+                <a class="page-link" href="<?= $pageUrl($number) ?>"<?= $number === $page ? ' aria-current="page"' : '' ?>>
+                    <?= $number ?>
+                </a>
+            </li>
+            <?php $previous = $number ?>
+        <?php endforeach ?>
+        <li class="page-item<?= $page === $pages ? ' disabled' : '' ?>">
+            <a class="page-link" href="<?= $pageUrl(min($pages, $page + 1)) ?>">Next</a>
+        </li>
+    </ul>
+</nav>

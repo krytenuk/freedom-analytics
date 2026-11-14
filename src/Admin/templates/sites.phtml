@@ -1,0 +1,77 @@
+<?php
+/**
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var list<App\Entity\Site> $sites
+ * @var array<int, array{visits: int, pageviews: int, firstVisit: DateTimeImmutable|null, lastActivity: DateTimeImmutable|null}> $stats
+ * @var string|null $notice
+ */
+
+use Admin\View\Format;
+
+$this->layout()->setVariables(['title' => 'Sites', 'activeNav' => 'sites']);
+?>
+<?= $this->partial('admin::partial/page-title', ['heading' => 'Sites']) ?>
+
+<section class="section">
+    <div class="card overflow-auto">
+        <div class="card-body">
+            <?php if ($notice) : ?>
+                <div class="alert alert-success mt-3" role="status"><?= $this->escapeHtml($notice) ?></div>
+            <?php endif ?>
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="card-title">Sites <span>| <?= count($sites) ?></span></h5>
+                <a class="btn btn-primary btn-sm" href="<?= $this->url('site-add') ?>">
+                    <i class="bi bi-plus-lg me-1"></i> Add Site
+                </a>
+            </div>
+
+            <?php if (! $sites) : ?>
+                <p>No sites yet. Add one to get its tracking code.</p>
+            <?php else : ?>
+                <table class="table table-borderless table-hover align-middle">
+                    <thead>
+                    <tr>
+                        <th scope="col">Site</th>
+                        <th scope="col">Domain</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="text-end">Visits</th>
+                        <th scope="col" class="text-end">Page Views</th>
+                        <th scope="col">Last Activity</th>
+                        <th scope="col"><span class="visually-hidden">Actions</span></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($sites as $site) : ?>
+                        <?php $siteStats = $stats[(int) $site->getId()] ?>
+                        <tr>
+                            <td><a href="<?= $this->url('site', ['id' => $site->getId()]) ?>"><?= $this->escapeHtml($site->getName()) ?></a></td>
+                            <td><?= $this->escapeHtml($site->getDomain()) ?></td>
+                            <td>
+                                <?php if ($site->isActive()) : ?>
+                                    <span class="badge bg-success-subtle text-success-emphasis"><i class="bi bi-check-circle me-1"></i>Collecting</span>
+                                <?php else : ?>
+                                    <span class="badge bg-secondary-subtle text-body-secondary"><i class="bi bi-pause-circle me-1"></i>Paused</span>
+                                <?php endif ?>
+                            </td>
+                            <td class="text-end"><?= Format::number($siteStats['visits']) ?></td>
+                            <td class="text-end"><?= Format::number($siteStats['pageviews']) ?></td>
+                            <td><?= $siteStats['lastActivity'] === null
+                                ? '<span class="text-body-secondary">Never</span>'
+                                : $this->escapeHtml($siteStats['lastActivity']->format('j M Y, H:i')) ?></td>
+                            <td class="text-end text-nowrap">
+                                <a class="btn btn-outline-primary btn-sm" href="<?= $this->url('dashboard') ?>?site=<?= (int) $site->getId() ?>">
+                                    <i class="bi bi-bar-chart"></i> Reports
+                                </a>
+                                <a class="btn btn-outline-secondary btn-sm" href="<?= $this->url('site-edit', ['id' => $site->getId()]) ?>">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach ?>
+                    </tbody>
+                </table>
+            <?php endif ?>
+        </div>
+    </div>
+</section>
