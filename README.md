@@ -1,5 +1,7 @@
 # Freedom Analytics
 
+[![Tests](https://github.com/krytenuk/freedom-analytics/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/krytenuk/freedom-analytics/actions/workflows/tests.yml?query=branch%3Amain)
+
 Self-hosted web analytics, built with [Mezzio](https://docs.mezzio.dev/) and Doctrine ORM. It covers the core of
 [Open Web Analytics](https://github.com/Open-Web-Analytics/Open-Web-Analytics): a first party JavaScript tracker,
 visits, visitors, page views and events, many sites in one install, and a reporting dashboard for several users. The
