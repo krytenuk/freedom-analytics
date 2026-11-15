@@ -9,3 +9,6 @@
 /data/cache/*
 !/data/cache/.gitkeep
 /phpunit.xml
+
+# Server-specific rewrite rules, kept locally
+/public/.htaccess
