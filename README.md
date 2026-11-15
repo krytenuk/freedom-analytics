@@ -31,6 +31,8 @@ block the cookie are counted by a hash that changes daily. The tracking endpoint
 
 - **Dashboard:** headline numbers against the previous period, the trend, visitors active now, traffic sources,
   devices, top pages, referrers, countries, events and the latest visits
+- **Live:** who is on the site now, updated every 10 seconds: visitors active in the last 5 minutes, the pages they
+  are on, page views each minute, the visits of the last 30 minutes and the latest page views and events
 - **Visitors:** overview, latest visits with each visit's click stream, locations, languages, browsers, operating
   systems, devices, screen resolutions, loyalty, recency and visit times
 - **Traffic:** sources, all sources, referring sites, search engines, search terms, social networks and campaigns

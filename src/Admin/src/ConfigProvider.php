@@ -11,6 +11,7 @@ use Admin\Forms\SiteForm;
 use Admin\Forms\TwoFactorCodeForm;
 use Admin\Forms\UserForm;
 use Admin\Handler\DashboardHandler;
+use Admin\Handler\LiveHandler;
 use Admin\Handler\LoginHandler;
 use Admin\Handler\LogoutHandler;
 use Admin\Handler\PageViewHandler;
@@ -149,6 +150,7 @@ final class ConfigProvider
                 TemplateRendererInterface::class,
             ],
             DashboardHandler::class            => $reportHandler,
+            LiveHandler::class                 => $reportHandler,
             VisitorsHandler::class             => $reportHandler,
             ReportHandler::class               => $reportHandler,
             VisitListHandler::class            => $reportHandler,
@@ -241,6 +243,8 @@ final class ConfigProvider
             ['/logout', LogoutHandler::class, ['POST'], 'logout'],
             // Reports
             ['/', $report(DashboardHandler::class), ['GET'], 'dashboard'],
+            ['/live', $report(LiveHandler::class), ['GET'], 'live'],
+            ['/live/data', $report(LiveHandler::class), ['GET'], 'live-data'],
             ['/visitors', $report(VisitorsHandler::class), ['GET'], 'visitors'],
             ['/visits', $report(VisitListHandler::class), ['GET'], 'visits'],
             ['/visits/{id:\d+}', $report(VisitViewHandler::class), ['GET'], 'visit'],

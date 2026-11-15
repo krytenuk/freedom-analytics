@@ -1,0 +1,211 @@
+<?php
+/**
+ * The content of the live page, rendered on its own by LiveHandler each time the page asks for an update
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var array{
+ *     now: DateTimeImmutable,
+ *     active: int,
+ *     visits: list<App\Entity\Visit>,
+ *     visit_count: int,
+ *     pageviews: int,
+ *     events: int,
+ *     minutes: list<array{minute: string, pageviews: int}>,
+ *     pages: list<array{id: int, path: string, title: string|null, visitors: int}>,
+ *     activity: list<array<string, mixed>>
+ * } $live
+ * @var int $activeMinutes
+ * @var int $windowMinutes
+ */
+
+use Admin\View\Format;
+
+$now         = $live['now'];
+$activeSince = $now->modify(sprintf('-%d minutes', $activeMinutes));
+$deviceIcons = ['desktop' => 'bi-laptop', 'mobile' => 'bi-phone', 'tablet' => 'bi-tablet'];
+
+$kpi = fn (string $label, string $icon, int $value): string => $this->partial('admin::partial/kpi', [
+    'label'  => $label,
+    'icon'   => $icon,
+    'value'  => $value,
+    'format' => 'number',
+]);
+?>
+<div class="row g-3 mb-3">
+    <div class="col-6 col-xl-3"><?= $kpi('On the Site Now', 'bi-broadcast', $live['active']) ?></div>
+    <div class="col-6 col-xl-3"><?= $kpi('Visits', 'bi-door-open', $live['visit_count']) ?></div>
+    <div class="col-6 col-xl-3"><?= $kpi('Page Views', 'bi-file-earmark-text', $live['pageviews']) ?></div>
+    <div class="col-6 col-xl-3"><?= $kpi('Events', 'bi-lightning', $live['events']) ?></div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Page Views per Minute <span>| last <?= $windowMinutes ?> minutes</span></h5>
+                <?= $this->partial('admin::partial/chart', [
+                    'id'     => 'live-minutes',
+                    'type'   => 'bar',
+                    'height' => 260,
+                    'label'  => 'Page views each minute for the last ' . $windowMinutes . ' minutes. The latest '
+                        . 'activity list has each one.',
+                    'data'   => [
+                        'labels' => array_column($live['minutes'], 'minute'),
+                        'values' => array_column($live['minutes'], 'pageviews'),
+                        'name'   => 'Page Views',
+                        'format' => 'number',
+                    ],
+                ]) ?>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Pages Being Viewed</h5>
+                <?php if ($live['pages'] === []) : ?>
+                    <p class="text-body-secondary mb-0">Nobody is on the site right now.</p>
+                <?php else : ?>
+                    <table class="table table-borderless table-sm align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th scope="col">Page</th>
+                            <th scope="col" class="text-end">Visitors</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($live['pages'] as $page) : ?>
+                            <tr>
+                                <td class="text-break">
+                                    <a href="<?= $this->url('page', ['id' => $page['id']]) ?>"><?= $this->escapeHtml($page['path']) ?></a>
+                                    <?php if ($page['title'] !== null) : ?>
+                                        <span class="d-block small text-body-secondary"><?= $this->escapeHtml($page['title']) ?></span>
+                                    <?php endif ?>
+                                </td>
+                                <td class="text-end"><?= Format::number($page['visitors']) ?></td>
+                            </tr>
+                        <?php endforeach ?>
+                        </tbody>
+                    </table>
+                <?php endif ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Visits <span>| active in the last <?= $windowMinutes ?> minutes</span></h5>
+                <?php if ($live['visits'] === []) : ?>
+                    <p class="text-body-secondary mb-0">No visits in the last <?= $windowMinutes ?> minutes.</p>
+                <?php else : ?>
+                    <div class="table-responsive">
+                        <table class="table table-borderless table-hover align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th scope="col">Last Active</th>
+                                <th scope="col">Current Page</th>
+                                <th scope="col" class="text-end">Pages</th>
+                                <th scope="col" class="text-end">Length</th>
+                                <th scope="col">Came From</th>
+                                <th scope="col">Visitor</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($live['visits'] as $visit) : ?>
+                                <?php $isActive = $visit->getLastActivityAt() >= $activeSince ?>
+                                <tr>
+                                    <td class="text-nowrap">
+                                        <span class="live-dot<?= $isActive ? '' : ' live-dot-idle' ?>" aria-hidden="true"></span>
+                                        <span class="visually-hidden"><?= $isActive ? 'On the site now,' : 'Idle,' ?></span>
+                                        <a href="<?= $this->url('visit', ['id' => $visit->getId()]) ?>"
+                                           title="<?= $this->escapeHtmlAttr($visit->getLastActivityAt()->format('H:i:s')) ?>">
+                                            <?= $this->escapeHtml(Format::ago($visit->getLastActivityAt(), $now)) ?>
+                                        </a>
+                                    </td>
+                                    <td class="text-break small"><?= $this->escapeHtml($visit->getExitPage()?->getPath() ?? '') ?></td>
+                                    <td class="text-end"><?= $visit->getNumPageviews() ?></td>
+                                    <td class="text-end text-nowrap"><?= Format::duration($visit->getDuration()) ?></td>
+                                    <td>
+                                        <?= $this->escapeHtml($visit->getMediumLabel()) ?>
+                                        <?php if ($visit->getSource() !== null) : ?>
+                                            <span class="small text-body-secondary d-block text-truncate" style="max-width: 12rem">
+                                                <?= $this->escapeHtml($visit->getSource()) ?>
+                                            </span>
+                                        <?php endif ?>
+                                    </td>
+                                    <td class="text-nowrap">
+                                        <i class="bi <?= $deviceIcons[$visit->getDeviceType()] ?? 'bi-question-circle' ?>"
+                                           title="<?= $this->escapeHtmlAttr(ucfirst((string) $visit->getDeviceType())) ?>"></i>
+                                        <span class="small"><?= $this->escapeHtml(trim($visit->getBrowser() . ' · ' . $visit->getOs(), ' ·')) ?></span>
+                                        <?php if ($visit->getCountry() !== null) : ?>
+                                            <span class="badge bg-secondary-subtle text-body-secondary"><?= $this->escapeHtml($visit->getCountry()) ?></span>
+                                        <?php endif ?>
+                                        <?php if ($visit->isNewVisitor()) : ?>
+                                            <span class="badge bg-primary-subtle text-primary-emphasis">New</span>
+                                        <?php else : ?>
+                                            <span class="badge bg-body-secondary text-body-secondary">Visit <?= $visit->getVisitNumber() ?></span>
+                                        <?php endif ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <?php if ($live['visit_count'] > count($live['visits'])) : ?>
+                        <p class="small text-body-secondary mt-2 mb-0">
+                            The <?= count($live['visits']) ?> most recently active of <?= Format::number($live['visit_count']) ?> visits.
+                        </p>
+                    <?php endif ?>
+                <?php endif ?>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Latest Activity</h5>
+                <?php if ($live['activity'] === []) : ?>
+                    <p class="text-body-secondary mb-0">Nothing in the last <?= $windowMinutes ?> minutes.</p>
+                <?php else : ?>
+                    <div class="activity">
+                        <?php foreach ($live['activity'] as $item) : ?>
+                            <div class="activity-item d-flex">
+                                <div class="activite-label" title="<?= $this->escapeHtmlAttr($item['at']->format('H:i:s')) ?>">
+                                    <?= $this->escapeHtml(Format::ago($item['at'], $now)) ?>
+                                </div>
+                                <?php if ($item['type'] === 'pageview') : ?>
+                                    <?php $pageview = $item['pageview'] ?>
+                                    <i class="bi bi-circle-fill activity-badge text-primary align-self-start"></i>
+                                    <div class="activity-content">
+                                        <a href="<?= $this->url('visit', ['id' => $pageview->getVisit()->getId()]) ?>" class="text-break">
+                                            <?= $this->escapeHtml($pageview->getPage()->getPath()) ?>
+                                        </a>
+                                        <?php if ($pageview->getPage()->getTitle() !== null) : ?>
+                                            <span class="d-block small text-body-secondary"><?= $this->escapeHtml($pageview->getPage()->getTitle()) ?></span>
+                                        <?php endif ?>
+                                    </div>
+                                <?php else : ?>
+                                    <?php $event = $item['event'] ?>
+                                    <i class="bi bi-lightning-fill activity-badge text-warning align-self-start"></i>
+                                    <div class="activity-content">
+                                        <span class="badge bg-warning-subtle text-warning-emphasis">Event</span>
+                                        <a href="<?= $this->url('visit', ['id' => $event->getVisit()->getId()]) ?>">
+                                            <strong><?= $this->escapeHtml($event->getCategory()) ?></strong> /
+                                            <?= $this->escapeHtml($event->getAction()) ?>
+                                        </a>
+                                        <?php if ($event->getLabel() !== null) : ?>
+                                            <span class="d-block small text-body-secondary text-break"><?= $this->escapeHtml($event->getLabel()) ?></span>
+                                        <?php endif ?>
+                                    </div>
+                                <?php endif ?>
+                            </div>
+                        <?php endforeach ?>
+                    </div>
+                <?php endif ?>
+            </div>
+        </div>
+    </div>
+</div>

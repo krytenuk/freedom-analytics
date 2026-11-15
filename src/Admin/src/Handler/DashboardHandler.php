@@ -33,7 +33,7 @@ final readonly class DashboardHandler implements RequestHandlerInterface
             'kpis'         => $this->reports->kpis($site, $period),
             'previousKpis' => $this->reports->kpis($site, $period->previous()),
             'trend'        => $this->reports->trend($site, $period),
-            'activeNow'    => $this->reports->activeVisitors($site),
+            'activeNow'    => $this->reports->activeVisitors($site, LiveHandler::ACTIVE_MINUTES),
             'mediums'      => $this->reports->dimension($site, $period, 'medium', 10),
             'devices'      => $this->reports->dimension($site, $period, 'device_type', 10),
             'topPages'     => $this->reports->dimension($site, $period, 'page', 10),

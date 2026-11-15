@@ -66,9 +66,17 @@ $moreLink = fn (string $report, string $text = 'View full report'): string => sp
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Right Now</h5>
-                    <div class="display-5 fw-semibold"><?= (int) $activeNow ?></div>
-                    <p class="small text-body-secondary mb-3">
-                        visitor<?= $activeNow === 1 ? '' : 's' ?> active in the last 5 minutes
+                    <!-- Kept up to date by analytics.js from the live page's data -->
+                    <div data-live-count="<?= $this->escapeHtmlAttr($this->url('live-data', [], ['site' => (string) $context->site->getId(), 'summary' => '1'])) ?>"
+                         data-live-interval="<?= \Admin\Handler\LiveHandler::REFRESH_SECONDS ?>" aria-live="polite">
+                        <div class="display-5 fw-semibold" data-live-count-value><?= (int) $activeNow ?></div>
+                        <p class="small text-body-secondary mb-1">
+                            <span data-live-count-unit><?= $activeNow === 1 ? 'visitor' : 'visitors' ?></span>
+                            active in the last <?= \Admin\Handler\LiveHandler::ACTIVE_MINUTES ?> minutes
+                        </p>
+                    </div>
+                    <p class="mb-3">
+                        <a class="small" href="<?= $this->url('live') ?>">See who is on the site <i class="bi bi-arrow-right"></i></a>
                     </p>
                     <div class="small">
                         <div class="d-flex justify-content-between border-top py-2">

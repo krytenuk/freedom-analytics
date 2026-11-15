@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Admin\View;
 
+use DateTimeInterface;
+
 use function abs;
 use function intdiv;
+use function max;
 use function number_format;
 use function round;
 use function sprintf;
@@ -50,6 +53,25 @@ final class Format
         return $hours > 0
             ? sprintf('%dh %02dm %02ds', $hours, $minutes, $rest)
             : sprintf('%dm %02ds', $minutes, $rest);
+    }
+
+    /**
+     * How long ago something happened, briefly: "just now", "45s ago", "3m ago" or "1h 05m ago"
+     */
+    public static function ago(DateTimeInterface $time, DateTimeInterface $now): string
+    {
+        $seconds = max(0, $now->getTimestamp() - $time->getTimestamp());
+        if ($seconds < 10) {
+            return 'just now';
+        }
+        if ($seconds < 60) {
+            return $seconds . 's ago';
+        }
+        if ($seconds < 3600) {
+            return intdiv($seconds, 60) . 'm ago';
+        }
+
+        return sprintf('%dh %02dm ago', intdiv($seconds, 3600), intdiv($seconds % 3600, 60));
     }
 
     /**

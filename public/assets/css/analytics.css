@@ -93,3 +93,43 @@ form[name="user"] fieldset label {
     white-space: nowrap;
     color: var(--bs-emphasis-color);
 }
+
+/* The live page: a green dot for visitors on the site now, which pulses in the status badge while updating */
+.live-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 0.35rem;
+    border-radius: 50%;
+    background: #008300;
+    vertical-align: middle;
+}
+
+[data-bs-theme="dark"] .live-dot {
+    background: #0ca30c;
+}
+
+.live-dot.live-dot-idle,
+.live-status.is-paused .live-dot {
+    background: var(--bs-secondary-color);
+}
+
+.live-status.is-error .live-dot {
+    background: var(--bs-danger);
+}
+
+.live-status:not(.is-paused):not(.is-error) .live-dot {
+    animation: live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+    50% {
+        opacity: 0.35;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .live-status .live-dot {
+        animation: none !important;
+    }
+}

@@ -47,6 +47,10 @@ docker compose up -d               # app https://localhost:1453 (http 8090), db 
   (site + period, remembered in the session). Admin-only pages use `AdminRoleMiddleware` instead.
 - Layouts: `layout::admin` (logged in, set by `AdminLayoutMiddleware`) and `layout::auth` (login, errors). Mezzio's
   error handler has its own `layout` setting in `config/autoload/mezzio.global.php`.
+- Live page (`LiveHandler`, routes `live` and `live-data`): `analytics.js` polls `live-data` every 10s while the tab is
+  visible and swaps in `partial/live-panel` rendered server-side (`layout => false`), so HTML is built only in PHP. A
+  non-JSON reply means the session ended (redirect to login) and polling stops. `ReportModel::live()` starts every
+  query from visits with recent `last_activity_at` (`idx_visits_site_activity`).
 - Charts follow the dataviz rules: validated palette in `analytics.js` (light and dark steps), one y-axis only,
   donuts capped at 5 slices + "Other", every chart paired with a table.
 

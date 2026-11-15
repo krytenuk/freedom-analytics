@@ -1,0 +1,52 @@
+<?php
+/**
+ * The live page. The panel is fetched again from the "live-data" route every few seconds by analytics.js, which shows
+ * the state of that in the status badge, and stops while the tab is hidden.
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var Admin\Report\ReportContext $context
+ * @var array<string, mixed> $live
+ * @var int $activeMinutes
+ * @var int $windowMinutes
+ * @var int $refreshSeconds
+ */
+
+$this->layout()->setVariables(['title' => 'Live', 'activeNav' => 'live']);
+?>
+<div class="pagetitle d-flex flex-wrap justify-content-between align-items-end gap-2">
+    <div>
+        <h1>Live</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="<?= $this->url('dashboard') ?>">
+                    <?= $this->escapeHtml($context->site->getName()) ?>
+                </a></li>
+                <li class="breadcrumb-item active">Live</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <span class="live-status small text-body-secondary" data-live-status role="status" aria-live="polite">
+            <span class="live-dot" aria-hidden="true"></span>
+            <span data-live-status-text>Updated <?= $this->escapeHtml($live['now']->format('H:i:s')) ?></span>
+        </span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-live-toggle aria-pressed="false">
+            <i class="bi bi-pause-fill" aria-hidden="true"></i> <span>Pause</span>
+        </button>
+    </div>
+</div>
+<p class="small text-body-secondary mb-3">
+    <i class="bi bi-broadcast me-1"></i>
+    The last <?= $windowMinutes ?> minutes, updated every <?= $refreshSeconds ?> seconds. Visitors count as on the
+    site now if they did something in the last <?= $activeMinutes ?> minutes.
+</p>
+
+<section class="section dashboard"
+         data-live="<?= $this->escapeHtmlAttr($this->url('live-data', [], ['site' => (string) $context->site->getId()])) ?>"
+         data-live-interval="<?= $refreshSeconds ?>">
+    <?= $this->partial('admin::partial/live-panel', [
+        'live'          => $live,
+        'activeMinutes' => $activeMinutes,
+        'windowMinutes' => $windowMinutes,
+    ]) ?>
+</section>

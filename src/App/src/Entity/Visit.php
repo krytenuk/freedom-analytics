@@ -20,6 +20,7 @@ use function max;
 #[ORM\Index(name: 'idx_visits_site_date', columns: ['site_id', 'visit_date'])]
 #[ORM\Index(name: 'idx_visits_visitor_activity', columns: ['visitor_id', 'last_activity_at'])]
 #[ORM\Index(name: 'idx_visits_site_started', columns: ['site_id', 'started_at'])]
+#[ORM\Index(name: 'idx_visits_site_activity', columns: ['site_id', 'last_activity_at'])]
 class Visit
 {
     public const MEDIUM_DIRECT   = 'direct';

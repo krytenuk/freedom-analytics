@@ -25,6 +25,7 @@ use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_merge;
+use function array_slice;
 use function array_values;
 use function count;
 use function implode;
@@ -33,6 +34,7 @@ use function is_numeric;
 use function range;
 use function sprintf;
 use function str_pad;
+use function substr;
 use function ucfirst;
 use function usort;
 
@@ -302,6 +304,187 @@ class ReportModel
             ['site' => $site->getId(), 'since' => $since],
             ['since' => Types::DATETIME_IMMUTABLE]
         );
+    }
+
+    /**
+     * What is happening on the site now, for the live page: the visits active in the last few minutes, the pages
+     * their visitors are on, page views each minute and the latest page views and events.
+     *
+     * Everything starts from visits with recent activity (idx_visits_site_activity), since every recent page view or
+     * event belongs to one, and page views and events are then found by their visit.
+     *
+     * @return array{
+     *     now: DateTimeImmutable,
+     *     active: int,
+     *     visits: list<Visit>,
+     *     visit_count: int,
+     *     pageviews: int,
+     *     events: int,
+     *     minutes: list<array{minute: string, pageviews: int}>,
+     *     pages: list<array{id: int, path: string, title: string|null, visitors: int}>,
+     *     activity: list<array{type: string, at: DateTimeImmutable, pageview?: Pageview, event?: Event}>
+     * }
+     */
+    public function live(Site $site, int $windowMinutes = 30, int $activeMinutes = 5, int $limit = 50): array
+    {
+        $now    = new DateTimeImmutable('now', $this->config->timezone);
+        $from   = self::minuteStart($now)->modify(sprintf('-%d minutes', $windowMinutes - 1));
+        $active = $now->modify(sprintf('-%d minutes', $activeMinutes));
+        $params = ['site' => $site->getId(), 'since' => $from];
+        $types  = ['since' => Types::DATETIME_IMMUTABLE];
+
+        $visitCount = (int) $this->connection->fetchOne(
+            'SELECT COUNT(*) FROM visits v WHERE v.site_id = :site AND v.last_activity_at >= :since',
+            $params,
+            $types
+        );
+
+        /** @var list<string> $viewTimes */
+        $viewTimes = $this->connection->fetchFirstColumn(
+            'SELECT p.viewed_at FROM visits v JOIN pageviews p ON p.visit_id = v.id'
+            . ' WHERE v.site_id = :site AND v.last_activity_at >= :since AND p.viewed_at >= :since',
+            $params,
+            $types
+        );
+
+        $events = (int) $this->connection->fetchOne(
+            'SELECT COUNT(*) FROM visits v JOIN events e ON e.visit_id = v.id'
+            . ' WHERE v.site_id = :site AND v.last_activity_at >= :since AND e.occurred_at >= :since',
+            $params,
+            $types
+        );
+
+        $pages = $this->connection->fetchAllAssociative(
+            'SELECT pg.id, pg.path, pg.title, COUNT(DISTINCT v.visitor_id) AS visitors'
+            . ' FROM visits v JOIN pages pg ON pg.id = v.exit_page_id'
+            . ' WHERE v.site_id = :site AND v.last_activity_at >= :active'
+            . ' GROUP BY pg.id, pg.path, pg.title ORDER BY visitors DESC, pg.path LIMIT 10',
+            ['site' => $site->getId(), 'active' => $active],
+            ['active' => Types::DATETIME_IMMUTABLE]
+        );
+
+        /** @var list<Visit> $visits */
+        $visits = $this->entityManager->createQueryBuilder()
+            ->select('v', 'exit', 'visitor')
+            ->from(Visit::class, 'v')
+            ->leftJoin('v.exitPage', 'exit')
+            ->join('v.visitor', 'visitor')
+            ->where('v.site = :site')
+            ->andWhere('v.lastActivityAt >= :since')
+            ->setParameter('site', $site)
+            ->setParameter('since', $from, Types::DATETIME_IMMUTABLE)
+            ->orderBy('v.lastActivityAt', 'DESC')
+            ->addOrderBy('v.id', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        return [
+            'now'         => $now,
+            'active'      => $this->activeVisitors($site, $activeMinutes),
+            'visits'      => $visits,
+            'visit_count' => $visitCount,
+            'pageviews'   => count($viewTimes),
+            'events'      => $events,
+            'minutes'     => self::perMinute($viewTimes, $from, $windowMinutes),
+            'pages'       => array_map(static fn (array $row): array => [
+                'id'       => (int) $row['id'],
+                'path'     => (string) $row['path'],
+                'title'    => $row['title'] === null ? null : (string) $row['title'],
+                'visitors' => (int) $row['visitors'],
+            ], $pages),
+            'activity'    => $this->recentActivity($site, $from, 20),
+        ];
+    }
+
+    /**
+     * Counts of the times in each minute from $from, with minutes that had none
+     *
+     * @param list<string> $times Database datetimes, "Y-m-d H:i:s"
+     * @return list<array{minute: string, pageviews: int}> Minute as "H:i"
+     */
+    public static function perMinute(array $times, DateTimeImmutable $from, int $minutes): array
+    {
+        $counts = [];
+        foreach ($times as $time) {
+            $key          = substr($time, 0, 16);
+            $counts[$key] = ($counts[$key] ?? 0) + 1;
+        }
+
+        $buckets = [];
+        $minute  = self::minuteStart($from);
+        for ($i = 0; $i < $minutes; $i++) {
+            $buckets[] = [
+                'minute'    => $minute->format('H:i'),
+                'pageviews' => $counts[$minute->format('Y-m-d H:i')] ?? 0,
+            ];
+            $minute    = $minute->modify('+1 minute');
+        }
+
+        return $buckets;
+    }
+
+    /**
+     * The latest page views and events since $since, newest first
+     *
+     * @return list<array{type: string, at: DateTimeImmutable, pageview?: Pageview, event?: Event}>
+     */
+    private function recentActivity(Site $site, DateTimeImmutable $since, int $limit): array
+    {
+        /** @var list<Pageview> $pageviews */
+        $pageviews = $this->entityManager->createQueryBuilder()
+            ->select('p', 'pg', 'v')
+            ->from(Pageview::class, 'p')
+            ->join('p.visit', 'v')
+            ->join('p.page', 'pg')
+            ->where('v.site = :site')
+            ->andWhere('v.lastActivityAt >= :since')
+            ->andWhere('p.viewedAt >= :since')
+            ->setParameter('site', $site)
+            ->setParameter('since', $since, Types::DATETIME_IMMUTABLE)
+            ->orderBy('p.viewedAt', 'DESC')
+            ->addOrderBy('p.id', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        /** @var list<Event> $events */
+        $events = $this->entityManager->createQueryBuilder()
+            ->select('e', 'v')
+            ->from(Event::class, 'e')
+            ->join('e.visit', 'v')
+            ->where('v.site = :site')
+            ->andWhere('v.lastActivityAt >= :since')
+            ->andWhere('e.occurredAt >= :since')
+            ->setParameter('site', $site)
+            ->setParameter('since', $since, Types::DATETIME_IMMUTABLE)
+            ->orderBy('e.occurredAt', 'DESC')
+            ->addOrderBy('e.id', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        $activity = [];
+        foreach ($pageviews as $pageview) {
+            $activity[] = ['type' => 'pageview', 'at' => $pageview->getViewedAt(), 'pageview' => $pageview];
+        }
+        foreach ($events as $event) {
+            $activity[] = ['type' => 'event', 'at' => $event->getOccurredAt(), 'event' => $event];
+        }
+
+        // Newest first, and events after the page view they happened on
+        usort(
+            $activity,
+            static fn (array $a, array $b): int
+                => [$b['at'], $b['type'] === 'event'] <=> [$a['at'], $a['type'] === 'event']
+        );
+
+        return array_slice($activity, 0, $limit);
+    }
+
+    private static function minuteStart(DateTimeImmutable $time): DateTimeImmutable
+    {
+        return $time->setTime((int) $time->format('H'), (int) $time->format('i'));
     }
 
     /**

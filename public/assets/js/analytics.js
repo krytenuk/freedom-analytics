@@ -1,5 +1,5 @@
 /**
- * The report pages' behaviour: charts, the site and period forms, and copy buttons.
+ * The report pages' behaviour: charts, the site and period forms, copy buttons, and the live page's updates.
  *
  * Charts are elements with data-chart="trend|donut|bar" holding their data in a JSON script tag (see
  * partial/chart.phtml), drawn with ApexCharts. Colours come from a validated categorical palette, with separate steps
@@ -128,13 +128,17 @@
         });
     }
 
+    function destroyCharts() {
+        while (charts.length) {
+            charts.pop().destroy();
+        }
+    }
+
     function draw() {
         if (typeof ApexCharts === 'undefined') {
             return;
         }
-        while (charts.length) {
-            charts.pop().destroy();
-        }
+        destroyCharts();
         document.querySelectorAll('[data-chart]').forEach(function (element) {
             const source = element.querySelector('script[type="application/json"]');
             if (!source) {
@@ -199,6 +203,131 @@
                 setTimeout(function () { button.innerHTML = html; }, 1500);
             });
         });
+    });
+
+    /**
+     * Asks for new data every few seconds while the tab is visible, and calls update() with it. Stops for good if the
+     * answer is not JSON, which means the session has ended and the request was sent to the login page.
+     */
+    function poll(url, seconds, update, status) {
+        let timer = null;
+        let paused = false;
+        let failures = 0;
+        let stopped = false;
+
+        function schedule(delay) {
+            clearTimeout(timer);
+            if (!stopped && !paused && !document.hidden) {
+                timer = setTimeout(tick, delay);
+            }
+        }
+
+        function tick() {
+            fetch(url, {headers: {Accept: 'application/json'}, credentials: 'same-origin', cache: 'no-store'})
+                .then(function (response) {
+                    const type = response.headers.get('Content-Type') || '';
+                    if (!response.ok || type.indexOf('application/json') === -1) {
+                        throw new Error(response.ok ? 'session' : 'http');
+                    }
+                    return response.json();
+                })
+                .then(function (data) {
+                    failures = 0;
+                    update(data);
+                    status('live', data);
+                    schedule(seconds * 1000);
+                })
+                .catch(function (error) {
+                    if (error.message === 'session') {
+                        stopped = true;
+                        status('ended');
+                        return;
+                    }
+                    // Wait longer after each failure, up to five minutes
+                    failures++;
+                    status('error');
+                    schedule(Math.min(seconds * 1000 * Math.pow(2, failures), 300000));
+                });
+        }
+
+        // Catch up as soon as the tab is shown again
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                clearTimeout(timer);
+            } else {
+                schedule(0);
+            }
+        });
+
+        schedule(seconds * 1000);
+
+        return {
+            setPaused: function (value) {
+                paused = value;
+                if (paused) {
+                    clearTimeout(timer);
+                    status('paused');
+                } else {
+                    schedule(0);
+                }
+            }
+        };
+    }
+
+    // The live page: replaces its panel with the fresh one, and redraws its chart
+    document.querySelectorAll('[data-live]').forEach(function (panel) {
+        const badge = document.querySelector('[data-live-status]');
+        const text = badge && badge.querySelector('[data-live-status-text]');
+        const toggle = document.querySelector('[data-live-toggle]');
+
+        function status(state, data) {
+            if (!badge || !text) {
+                return;
+            }
+            badge.classList.toggle('is-paused', state === 'paused' || state === 'ended');
+            badge.classList.toggle('is-error', state === 'error');
+            if (state === 'live') {
+                text.textContent = 'Updated ' + data.updated;
+            } else if (state === 'paused') {
+                text.textContent = 'Paused';
+            } else if (state === 'error') {
+                text.textContent = 'Could not update, trying again';
+            } else if (state === 'ended') {
+                text.textContent = 'Stopped: reload the page to sign in again';
+                if (toggle) {
+                    toggle.hidden = true;
+                }
+            }
+        }
+
+        const poller = poll(panel.getAttribute('data-live'), Number(panel.getAttribute('data-live-interval')) || 10,
+            function (data) {
+                destroyCharts();
+                panel.innerHTML = data.html;
+                draw();
+                document.title = document.title.replace(/^(\(\d+\) )?/, '(' + data.active + ') ');
+            }, status);
+
+        if (toggle) {
+            toggle.addEventListener('click', function () {
+                const pause = toggle.getAttribute('aria-pressed') !== 'true';
+                toggle.setAttribute('aria-pressed', pause ? 'true' : 'false');
+                toggle.querySelector('i').className = pause ? 'bi bi-play-fill' : 'bi bi-pause-fill';
+                toggle.querySelector('span').textContent = pause ? 'Resume' : 'Pause';
+                poller.setPaused(pause);
+            });
+        }
+    });
+
+    // The dashboard's count of visitors on the site now
+    document.querySelectorAll('[data-live-count]').forEach(function (element) {
+        const value = element.querySelector('[data-live-count-value]');
+        const unit = element.querySelector('[data-live-count-unit]');
+        poll(element.getAttribute('data-live-count'), Number(element.getAttribute('data-live-interval')) || 10,
+            function (data) {
+                value.textContent = new Intl.NumberFormat().format(data.active);
+                unit.textContent = data.active === 1 ? 'visitor' : 'visitors';
+            }, function () {});
     });
 
     if (document.readyState === 'loading') {
