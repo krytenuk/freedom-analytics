@@ -125,25 +125,166 @@ bin/doctrine migrations:migrate
 
 ## Tracking a site
 
-Put the tracking code from the site's page just before `</head>`:
+Put the tracking code from the site's page just before `</head>` on every page:
 
 ```html
 <script async src="https://analytics.example.com/fa.js" data-site="SITE_KEY"></script>
 ```
 
-Optional attributes: `data-cookieless`, `data-spa` (single page apps), `data-outbound` (outbound link clicks),
-`data-downloads` (file downloads) and `data-manual` (no automatic page view). Events:
+`SITE_KEY` is the site's public key, shown with the tracking code on the site's page in the admin area. The tracker
+sends hits to `collect` next to wherever `fa.js` was loaded from, so it needs no other setting. Including the script
+twice on a page does no harm: only the first copy runs.
+
+### Options
+
+Options are attributes of the script tag. An attribute is on when it is present, with or without a value, and off
+when it is missing or set to `"false"`:
+
+```html
+<script async src="https://analytics.example.com/fa.js" data-site="SITE_KEY" data-spa data-outbound data-downloads></script>
+```
+
+| Attribute | What it does |
+|---|---|
+| `data-site` | The site key. Required: without it nothing is sent. |
+| `data-cookieless` | Keeps no visitor id in a cookie. Visitors are counted by a hash that changes daily instead. |
+| `data-spa` | Records a page view each time a single page app changes the address. |
+| `data-outbound` | Records clicks on links to other sites as events. |
+| `data-downloads` | Records clicks on links to files as events. |
+| `data-manual` | Records no page view when the page loads; the page calls `fa('pageview')` itself. |
+
+**`data-cookieless`.** By default the tracker keeps a random visitor id in a first party cookie, `_fa_vid`, on the
+tracked site's own domain. It lasts a year from the latest visit, and is `SameSite=Lax` and, on HTTPS pages,
+`Secure`. With `data-cookieless`, no cookie is set, and the server identifies visitors by a hash of the site, the day,
+their IP address and their browser, which it never stores. A visitor is then a new visitor each day, so the loyalty
+and recency reports, and the split between new and returning visitors, are less accurate. Browsers that send Do Not
+Track or Global Privacy Control never get the cookie, whatever this setting.
+
+**`data-spa`.** Single page apps change the address with the History API instead of loading a new page. With
+`data-spa`, the tracker records a page view after each `history.pushState()` and `history.replaceState()`, and when
+the visitor goes back or forward. The previous address is sent as the referrer, so the content reports show how
+visitors moved between the app's pages. A change of fragment alone, such as a jump to `#section`, is not a new page
+view. Load the script once, in the app's shell, not with each view.
+
+**`data-outbound`.** Records a click on a link to another host, over `http` or `https`, as an event with the category
+`Outbound Links`, the action `Click` and the link's address as the label. Subdomains count as other hosts, so on
+`www.example.com` a link to `shop.example.com` is outbound.
+
+**`data-downloads`.** Records a click on a link to a file as an event with the category `Downloads`, the action
+`Download` and the file's address as the label. A file is a link whose path ends in one of: `pdf`, `zip`, `rar`, `7z`,
+`gz`, `doc`, `docx`, `xls`, `xlsx`, `ppt`, `pptx`, `csv`, `txt`, `rtf`, `odt`, `ods`, `mp3`, `mp4`, `mov`, `avi`,
+`dmg`, `exe`, `msi`, `apk` and `epub`. A download from another site counts as a download, not an outbound click.
+
+Both appear in the Actions reports. Clicks are caught on the whole document, so links added after the page loads are
+included too.
+
+**`data-manual`.** For pages that need to choose what is recorded, such as when the address shown to the visitor is
+not the one to report, or the page should only count once some condition is met. Nothing is recorded until the page
+calls `fa('pageview')`; events can still be sent.
+
+### Recording page views and events from the page
+
+Copy this line once, before any `fa(...)` calls. It lets the page call `fa()` before `fa.js` has loaded: the calls
+are queued, and sent in order when it has.
 
 ```html
 <script>
   window.fa = window.fa || function () { (fa.q = fa.q || []).push(arguments); };
-  fa('event', 'Forms', 'Submit', 'Contact form');
 </script>
 ```
 
-The tracker sends hits to `/collect` with `navigator.sendBeacon()`, or an image request in older browsers. The
-`X-Analytics` response header says why a hit was left out (`wrong-domain`, `robot`, `do-not-track`,
-`excluded-ip`, ...), for debugging.
+**Page views:**
+
+```js
+fa('pageview');                          // the current address and title
+fa('pageview', {
+    url: 'https://example.com/basket',   // the address to record, which must be a full http or https address
+    title: 'Basket',                     // the page title
+    referrer: 'https://example.com/',    // where the visitor came from
+    force: true                          // record it even if it is the same page as the last page view
+});
+```
+
+Every option can be left out. Without `force`, a page view of the same address as the one before it (ignoring the
+fragment) is skipped, so a page is not counted twice.
+
+**Events:**
+
+```js
+fa('event', category, action, label, value);
+
+fa('event', 'Forms', 'Submit', 'Contact form');
+fa('event', 'Video', 'Play', 'Product tour', 30);
+document.querySelector('#signup').addEventListener('click', function () {
+    fa('event', 'Buttons', 'Click', 'Sign up');
+});
+```
+
+| Argument | Required | Notes |
+|---|---|---|
+| `category` | No | Groups events, such as `Forms` or `Video`. `General` if left out. Up to 100 characters. |
+| `action` | Yes | What happened, such as `Submit` or `Play`. An event without one is not sent. Up to 100 characters. |
+| `label` | No | Which one, such as the form's or video's name. Up to 255 characters. |
+| `value` | No | A number, such as a duration or an amount. Anything that is not a number is ignored. |
+
+Longer text is cut to fit. Each event is linked to the visit and to the page it happened on.
+
+### What is recorded
+
+Each page view sends the page's address and title, the referrer, the screen resolution and the browser's language.
+The server adds the browser, operating system and device from the User-Agent header, the country from the country
+header (see [Configuration](#configuration)), and the IP address, anonymised unless that is turned off.
+
+Pages are reported by their address without the fragment, and without campaign and click id parameters (`utm_*`,
+`gclid`, `fbclid`, `msclkid`, `dclid`, `yclid`, `mc_cid`, `mc_eid` and `_ga`), so one page is not split into many.
+The `utm_` parameters on a visit's first page are read before they are removed, for the campaign reports. Other query
+parameters are kept, sorted by name.
+
+### Site settings that affect tracking
+
+These are set on the site's edit page in the admin area:
+
+- **Paused:** a site that is not collecting records nothing.
+- **Other domains:** by default, hits are refused unless the page is on the site's domain or one of its subdomains. A
+  leading `www.` on the domain is ignored, so `www.example.com` also accepts `example.com` and `shop.example.com`.
+  Turn the check off to track the same site on other domains, such as a staging copy.
+- **Do Not Track:** when respected (the default), visitors whose browsers send Do Not Track or Global Privacy Control
+  are not recorded at all.
+- **Excluded IPs:** addresses whose visits are not recorded, such as your office's, separated by spaces, commas or
+  new lines. An IPv4 range can end in `*`, such as `192.168.1.*`. Behind a proxy or load balancer, set the trusted
+  proxy header in the configuration, or every visitor appears to come from the proxy's address.
+
+### Content Security Policy
+
+On a site with a Content Security Policy, allow the analytics server in `script-src` (for `fa.js`), `connect-src`
+(for `sendBeacon()`) and `img-src` (for the image fallback):
+
+```
+Content-Security-Policy: script-src 'self' https://analytics.example.com; connect-src 'self' https://analytics.example.com; img-src 'self' https://analytics.example.com
+```
+
+If the page's own `fa(...)` calls are in an inline script, they need the policy's nonce or hash as usual.
+
+### Checking it works
+
+The tracker sends hits to `/collect` with `navigator.sendBeacon()`, or an image request in older browsers.
+`/collect` gives the same answer whether a hit is recorded or not, so it does not reveal which site keys exist, but
+its `X-Analytics` response header says what happened. Look for the `collect` request in the browser's developer
+tools (Network tab):
+
+| `X-Analytics` | Meaning |
+|---|---|
+| `ok` | Recorded. |
+| `invalid` | A required parameter is missing or malformed, such as the site key, the page address, or an event's action. |
+| `unknown-site` | No site has that key, or the site is paused. |
+| `wrong-domain` | The page is not on the site's domain, and other domains are refused. |
+| `do-not-track` | The browser sent Do Not Track or Global Privacy Control, and the site respects it. |
+| `robot` | The User-Agent is a known robot, crawler or headless browser. |
+| `excluded-ip` | The visitor's IP address is in the site's excluded IPs. |
+| `error` | The hit could not be saved; the reason is in the application's log. |
+
+The Live page shows recorded page views within seconds. If nothing appears, check that the browser is not blocking
+the script (some content blockers do), and that you are not testing from an excluded address or with Do Not Track on.
 
 ## Commands
 
