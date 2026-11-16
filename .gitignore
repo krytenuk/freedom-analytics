@@ -12,3 +12,7 @@
 
 # Server-specific rewrite rules, kept locally
 /public/.htaccess
+
+# Locally trusted (mkcert) certificates, and machine-specific Compose settings
+/.docker/certs/
+/docker-compose.override.yml

@@ -16,6 +16,13 @@ services:
     environment:
       DB_HOST: db
       DB_PORT: 3306
+    # "shared" lets other Docker stacks, such as the Freedom Web Services site (/home/freedomw-mezzio), send hits to
+    # https://analytics.freedomwebservices.net.local. Only this container joins it, so their "db" stays their own.
+    networks:
+      default:
+      shared:
+        aliases:
+          - analytics.freedomwebservices.net.local
     depends_on:
       db:
         condition: service_healthy
@@ -41,6 +48,10 @@ services:
       timeout: 5s
       retries: 20
     restart: unless-stopped
+
+networks:
+  shared:
+    name: freedom-analytics
 
 volumes:
   db-data:
