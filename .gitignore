@@ -8,6 +8,8 @@
 /config/development.config.php
 /data/cache/*
 !/data/cache/.gitkeep
+/data/geoip/*
+!/data/geoip/.gitkeep
 /phpunit.xml
 
 # Server-specific rewrite rules, kept locally

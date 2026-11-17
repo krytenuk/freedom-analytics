@@ -232,13 +232,37 @@ Longer text is cut to fit. Each event is linked to the visit and to the page it 
 ### What is recorded
 
 Each page view sends the page's address and title, the referrer, the screen resolution and the browser's language.
-The server adds the browser, operating system and device from the User-Agent header, the country from the country
-header (see [Configuration](#configuration)), and the IP address, anonymised unless that is turned off.
+The server adds the browser, operating system and device from the User-Agent header, the country (see
+[Countries](#countries)), and the IP address, anonymised unless that is turned off.
 
 Pages are reported by their address without the fragment, and without campaign and click id parameters (`utm_*`,
 `gclid`, `fbclid`, `msclkid`, `dclid`, `yclid`, `mc_cid`, `mc_eid` and `_ga`), so one page is not split into many.
 The `utm_` parameters on a visit's first page are read before they are removed, for the campaign reports. Other query
 parameters are kept, sorted by name.
+
+### Countries
+
+The country comes from the country header that a CDN or proxy in front of the analytics server adds, such as
+Cloudflare's `CF-IPCountry`. Without one, it is looked up from the visitor's full address, before it is anonymised, in
+a MaxMind DB file at `data/geoip/GeoLite2-Country.mmdb` (the `geoip_database` setting). While there is no file, hits
+are still recorded, without a country. Private addresses, such as a development machine's, have no country.
+
+`vendor/bin/laminas analytics:geoip-update` downloads it. By default it fetches DB-IP's free IP to Country Lite, which
+needs no account. To use MaxMind's GeoLite2 Country instead, create a free MaxMind account and set
+`maxmind_account_id` and `maxmind_licence_key` in the `analytics` section of `local.php`; the command then uses
+MaxMind (or pass `--source=maxmind` or `--source=dbip`). The new file replaces the old one only once it has been
+checked, so a failed download leaves the old one working. It needs PHP's curl and zlib extensions.
+
+Run it from cron, such as every Monday morning, as both databases are updated regularly (DB-IP monthly, MaxMind twice
+a week) and the GeoLite2 licence requires keeping it up to date:
+
+```cron
+30 4 * * 1  cd /path/to/freedom-analytics && vendor/bin/laminas analytics:geoip-update -q
+```
+
+DB-IP's database is licensed under CC BY 4.0, which requires crediting DB-IP (https://db-ip.com) where the data is
+shown; MaxMind's GeoLite2 licence has its own attribution terms. A file is read on each hit without a country header,
+so a new one takes effect straight away.
 
 ### Site settings that affect tracking
 
@@ -298,8 +322,8 @@ bin/doctrine migrations:migrate            # update the database
 ## Configuration
 
 `config/autoload/analytics.global.php` holds the settings, overridden in `local.php`: the reporting timezone, the
-visit timeout, IP anonymisation, the country header (Cloudflare's `CF-IPCountry` by default; without a CDN that sets
-one, countries are not recorded), a trusted proxy header and data retention.
+visit timeout, IP anonymisation, the country header (Cloudflare's `CF-IPCountry` by default), the GeoIP database used when there is no
+country header (see [Countries](#countries)), a trusted proxy header and data retention.
 
 ## Development
 

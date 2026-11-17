@@ -7,9 +7,14 @@ namespace App;
 use App\Auth\UserRolesProvider;
 use App\Command\CreateUserCommand;
 use App\Command\DemoDataCommand;
+use App\Command\GeoIpUpdateCommand;
 use App\Command\PruneCommand;
 use App\Tracking\CollectHandler;
 use App\Tracking\CollectHandlerFactory;
+use App\Tracking\CountryLookup;
+use App\Tracking\CountryLookupFactory;
+use App\Tracking\GeoIpUpdater;
+use App\Tracking\GeoIpUpdaterFactory;
 use App\Tracking\HitParser;
 use App\Tracking\HitRecorder;
 use App\Tracking\HitRecorderFactory;
@@ -59,12 +64,15 @@ final class ConfigProvider
                 UserRolesProvider::class       => UserRolesProvider::class,
             ],
             'factories'  => [
-                CollectHandler::class    => CollectHandlerFactory::class,
-                CreateUserCommand::class => ConfigAbstractFactory::class,
-                DemoDataCommand::class   => ConfigAbstractFactory::class,
-                HitRecorder::class       => HitRecorderFactory::class,
-                PruneCommand::class      => ConfigAbstractFactory::class,
-                TrackingConfig::class    => TrackingConfigFactory::class,
+                CollectHandler::class     => CollectHandlerFactory::class,
+                CountryLookup::class      => CountryLookupFactory::class,
+                CreateUserCommand::class  => ConfigAbstractFactory::class,
+                DemoDataCommand::class    => ConfigAbstractFactory::class,
+                GeoIpUpdateCommand::class => ConfigAbstractFactory::class,
+                GeoIpUpdater::class       => GeoIpUpdaterFactory::class,
+                HitRecorder::class        => HitRecorderFactory::class,
+                PruneCommand::class       => ConfigAbstractFactory::class,
+                TrackingConfig::class     => TrackingConfigFactory::class,
             ],
             // Adds the "routes" config of every module to the application
             'delegators' => [
@@ -76,14 +84,15 @@ final class ConfigProvider
     public function getConfigAbstractFactoryConfig(): array
     {
         return [
-            CreateUserCommand::class => [EntityManagerInterface::class, PasswordHasherInterface::class],
-            DemoDataCommand::class   => [
+            CreateUserCommand::class  => [EntityManagerInterface::class, PasswordHasherInterface::class],
+            DemoDataCommand::class    => [
                 EntityManagerInterface::class,
                 HitRecorder::class,
                 UserAgentParser::class,
                 TrackingConfig::class,
             ],
-            PruneCommand::class      => [EntityManagerInterface::class, TrackingConfig::class],
+            GeoIpUpdateCommand::class => [GeoIpUpdater::class],
+            PruneCommand::class       => [EntityManagerInterface::class, TrackingConfig::class],
         ];
     }
 
@@ -91,9 +100,10 @@ final class ConfigProvider
     {
         return [
             'commands' => [
-                CreateUserCommand::NAME => CreateUserCommand::class,
-                DemoDataCommand::NAME   => DemoDataCommand::class,
-                PruneCommand::NAME      => PruneCommand::class,
+                CreateUserCommand::NAME  => CreateUserCommand::class,
+                DemoDataCommand::NAME    => DemoDataCommand::class,
+                GeoIpUpdateCommand::NAME => GeoIpUpdateCommand::class,
+                PruneCommand::NAME       => PruneCommand::class,
             ],
         ];
     }

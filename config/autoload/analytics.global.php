@@ -18,6 +18,10 @@ return [
         // The request header holding the visitor's two letter country code, set by a CDN or proxy in front of the
         // site, such as Cloudflare's CF-IPCountry. Null to not record countries.
         'country_header' => 'CF-IPCountry',
+        // When there is no country header, the visitor's country is looked up from their address in this MaxMind DB
+        // file, such as MaxMind's GeoLite2 Country or DB-IP's IP to Country Lite. Relative to the application's root.
+        // "analytics:geoip-update" downloads it. Nothing is looked up while the file is missing. Null to never look up.
+        'geoip_database' => 'data/geoip/GeoLite2-Country.mmdb',
         // Raw page views, events and visits older than this many days are deleted by "analytics:prune". 0 keeps them.
         'retention_days' => 0,
     ],

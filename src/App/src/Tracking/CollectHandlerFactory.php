@@ -20,6 +20,7 @@ final class CollectHandlerFactory
             $container->get(HitRecorder::class),
             $container->get(UserAgentParser::class),
             $container->get(TrackingConfig::class),
+            $container->get(CountryLookup::class),
             $logger instanceof LoggerInterface ? $logger : null,
         );
     }

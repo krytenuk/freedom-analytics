@@ -23,6 +23,7 @@ final readonly class TrackingConfig
         public ?string $ipHeader = null,
         public string $visitorHashSecret = '',
         public int $retentionDays = 0,
+        public ?string $geoipDatabase = null,
     ) {
     }
 
@@ -33,6 +34,7 @@ final readonly class TrackingConfig
     {
         $countryHeader = $config['country_header'] ?? null;
         $ipHeader      = $config['ip_header'] ?? null;
+        $geoipDatabase = $config['geoip_database'] ?? null;
 
         return new self(
             new DateTimeZone((string) ($config['timezone'] ?? date_default_timezone_get())),
@@ -42,6 +44,7 @@ final readonly class TrackingConfig
             is_string($ipHeader) && $ipHeader !== '' ? $ipHeader : null,
             (string) ($config['visitor_hash_secret'] ?? ''),
             max(0, (int) ($config['retention_days'] ?? 0)),
+            is_string($geoipDatabase) && $geoipDatabase !== '' ? $geoipDatabase : null,
         );
     }
 }

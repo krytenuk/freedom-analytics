@@ -45,5 +45,9 @@ return [
         // 'retention_days' => 400,
         // Behind a proxy or load balancer that sets it, the header holding the visitor's address:
         // 'ip_header'      => 'X-Forwarded-For',
+        // To download the country database from MaxMind (GeoLite2) with analytics:geoip-update, instead of DB-IP, set
+        // the account id and licence key from your MaxMind account:
+        // 'maxmind_account_id'  => '',
+        // 'maxmind_licence_key' => '',
     ],
 ];

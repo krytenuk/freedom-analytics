@@ -14,6 +14,7 @@ bin/doctrine orm:validate-schema
 vendor/bin/laminas analytics:user --email=... --role=admin   # create/reset a user (prompts for password)
 vendor/bin/laminas analytics:demo-data <site key or id> --days=90
 vendor/bin/laminas analytics:prune
+vendor/bin/laminas analytics:geoip-update     # country database (DB-IP, or MaxMind with credentials)
 docker compose up -d               # app https://localhost:1453 (http 8090), db 127.0.0.1:13307
 ```
 
@@ -35,6 +36,9 @@ docker compose up -d               # app https://localhost:1453 (http 8090), db 
 - Hit flow: `CollectHandler` (filters: site key, domain, DNT/GPC, robots, excluded IPs) → `HitParser` →
   `HitRecorder`. `/collect` must never touch the session (no cookie for tracked sites' visitors), and always returns
   the same response; `X-Analytics` header says why a hit was dropped.
+- Country: the `country_header` (Cloudflare's `CF-IPCountry`), else `CountryLookup` on the full IP in the MaxMind DB
+  file `geoip_database` (`data/geoip/`, gitignored, written by `analytics:geoip-update`; missing file = no country).
+  Private IPs, such as Docker's, never resolve. Staging/production are not behind Cloudflare, so they rely on it.
 - `HitRecorder` serialises hits per visitor with MariaDB `GET_LOCK` (name hashed, 64-char limit). Without it, a page
   view and an event sent together create two visits and lose counts. Visitors/pages are inserted with plain DBAL
   inserts that ignore duplicate-key errors, so the EntityManager is never closed by a race.

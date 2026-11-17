@@ -55,6 +55,7 @@ final class CollectHandler implements RequestHandlerInterface
         private readonly HitRecorder $recorder,
         private readonly UserAgentParser $userAgents,
         private readonly TrackingConfig $config,
+        private readonly CountryLookup $countries,
         private readonly ?LoggerInterface $logger = null,
     ) {
     }
@@ -123,7 +124,7 @@ final class CollectHandler implements RequestHandlerInterface
             $client,
             $userAgent === '' ? null : $userAgent,
             $ip === null ? null : ($this->config->anonymizeIp ? IpAddress::anonymize($ip) : $ip),
-            $this->country($request),
+            $this->country($request, $ip),
             $now,
         );
 
@@ -181,16 +182,22 @@ final class CollectHandler implements RequestHandlerInterface
         return is_string($address) && IpAddress::isValid($address) ? $address : null;
     }
 
-    private function country(ServerRequestInterface $request): ?string
+    /**
+     * From the country header, set by a CDN or proxy such as Cloudflare, or else from the address in the GeoIP
+     * database. The full address is looked up, before it is anonymised.
+     */
+    private function country(ServerRequestInterface $request, ?string $ip): ?string
     {
-        if ($this->config->countryHeader === null) {
-            return null;
+        if ($this->config->countryHeader !== null) {
+            $country = strtoupper(trim($request->getHeaderLine($this->config->countryHeader)));
+
+            // Cloudflare sends XX for unknown and T1 for Tor
+            if (preg_match('~^[A-Z]{2}$~', $country) === 1 && $country !== 'XX') {
+                return $country;
+            }
         }
 
-        $country = strtoupper(trim($request->getHeaderLine($this->config->countryHeader)));
-
-        // Cloudflare sends XX for unknown and T1 for Tor
-        return preg_match('~^[A-Z]{2}$~', $country) === 1 && $country !== 'XX' ? $country : null;
+        return $ip === null ? null : $this->countries->country($ip);
     }
 
     /**
