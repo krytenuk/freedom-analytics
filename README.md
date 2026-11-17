@@ -260,8 +260,8 @@ a week) and the GeoLite2 licence requires keeping it up to date:
 30 4 * * 1  cd /path/to/freedom-analytics && vendor/bin/laminas analytics:geoip-update -q
 ```
 
-DB-IP's database is licensed under CC BY 4.0, which requires crediting DB-IP (https://db-ip.com) where the data is
-shown; MaxMind's GeoLite2 licence has its own attribution terms. A file is read on each hit without a country header,
+DB-IP's database is licensed under CC BY 4.0, which requires crediting DB-IP; the admin area's footer does, with
+"IP Geolocation by DB-IP". MaxMind's GeoLite2 licence has its own attribution terms. A file is read on each hit without a country header,
 so a new one takes effect straight away.
 
 ### Site settings that affect tracking
