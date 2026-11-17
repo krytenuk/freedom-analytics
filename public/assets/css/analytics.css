@@ -133,3 +133,46 @@ form[name="user"] fieldset label {
         animation: none !important;
     }
 }
+
+/* The Locations report's world map (jsVectorMap), sized so its card matches the donut's beside it */
+.analytics-map {
+    position: relative;
+    width: 100%;
+    height: 268px;
+}
+
+@media (max-width: 575.98px) {
+    .analytics-map {
+        height: 200px;
+    }
+}
+
+/* html:root outranks jsvectormap.min.css's own :root, which loads after this file */
+html:root {
+    --jvm-tooltip-bg-color: var(--bs-body-bg);
+    --jvm-tooltip-color: var(--bs-body-color);
+    --jvm-tooltip-font-size: 0.8rem;
+    --jvm-tooltip-padding: 4px 8px;
+    --jvm-tooltip-radius: 4px;
+    --jvm-tooltip-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    --jvm-zoom-btn-bg-color: var(--bs-secondary-bg);
+    --jvm-zoom-btn-color: var(--bs-body-color);
+    --jvm-zoom-btn-size: 22px;
+}
+
+.jvm-tooltip {
+    border: 1px solid var(--bs-border-color);
+}
+
+.analytics-map-legend .list-inline-item {
+    margin-right: 0.9rem;
+}
+
+.analytics-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 0.35rem;
+    border-radius: 2px;
+    vertical-align: baseline;
+}

@@ -33,7 +33,8 @@ block the cookie are counted by a hash that changes daily. The tracking endpoint
   devices, top pages, referrers, countries, events and the latest visits
 - **Live:** who is on the site now, updated every 10 seconds: visitors active in the last 5 minutes, the pages they
   are on, page views each minute, the visits of the last 30 minutes and the latest page views and events
-- **Visitors:** overview, latest visits with each visit's click stream, locations, languages, browsers, operating
+- **Visitors:** overview, latest visits with each visit's click stream, locations (with a world map coloured like
+  its chart), languages, browsers, operating
   systems, devices, screen resolutions, loyalty, recency and visit times
 - **Traffic:** sources, all sources, referring sites, search engines, search terms, social networks and campaigns
 - **Content:** pages (each with its own report, including where visitors came from and went next), page titles,
@@ -352,6 +353,7 @@ These are included under their own licences, not the GPL:
   [NiceAdmin template](https://bootstrapmade.com/nice-admin-bootstrap-admin-html-template/) by BootstrapMade, under the
   [BootstrapMade licence](https://bootstrapmade.com/license/), which requires the "Designed by BootstrapMade" credit
   in the footer to stay.
-- [Bootstrap](https://getbootstrap.com/), [Bootstrap Icons](https://icons.getbootstrap.com/) and
-  [ApexCharts](https://apexcharts.com/), in `public/assets/admin/vendor`, under the MIT licence.
+- [Bootstrap](https://getbootstrap.com/), [Bootstrap Icons](https://icons.getbootstrap.com/),
+  [ApexCharts](https://apexcharts.com/) and [jsVectorMap](https://github.com/themustafaomar/jsvectormap) 1.7.0 (with
+  its world map), in `public/assets/admin/vendor`, under the MIT licence.
 - The PHP packages installed by Composer, each under the licence in its `composer.json`.

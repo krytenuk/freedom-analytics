@@ -27,6 +27,9 @@ final readonly class ReportHandler implements RequestHandlerInterface
 
     public const PER_PAGE = 25;
 
+    /** More than there are countries */
+    private const MAP_LIMIT = 300;
+
     public function __construct(private ReportModel $reports, private TemplateRendererInterface $template)
     {
     }
@@ -69,10 +72,24 @@ final readonly class ReportHandler implements RequestHandlerInterface
             );
         }
 
+        // The map shows every country, so it and the donut beside it are drawn from all of them, not this page's
+        $all = ($report['map'] ?? false) && $result['rows'] !== []
+            ? $this->reports->dimension(
+                $context->site,
+                $context->period,
+                $report['dimension'],
+                self::MAP_LIMIT,
+                0,
+                $sort,
+                $descending
+            )
+            : null;
+
         return new HtmlResponse($this->template->render('admin::report', [
             'id'     => $id,
             'report' => $report,
             'result' => $result,
+            'all'    => $all,
             'page'   => min($page, $pages),
             'pages'  => $pages,
         ]), 200, ['Cache-Control' => 'no-store']);

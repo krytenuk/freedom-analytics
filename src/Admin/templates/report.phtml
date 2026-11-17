@@ -7,6 +7,7 @@
  * @var string $id
  * @var array{title: string, group: string, label: string, description: string, chart?: string|null, link?: string|null} $report
  * @var array<string, mixed> $result
+ * @var array<string, mixed>|null $all Every row, for reports with a map, which draw the map and chart from it
  * @var int $page
  * @var int $pages
  */
@@ -23,6 +24,10 @@ $query = $result['sort'] === $result['primary'] && $result['descending']
     ? []
     : ['sort' => $result['sort'], 'dir' => $result['descending'] ? 'desc' : 'asc'];
 $primary = $result['metrics'][$result['primary']];
+$map     = ($all ?? null) !== null;
+$charted = $map ? $all : $result;
+// Beside the chart, the map or the table
+$wide = $map || $chart !== 'donut' || $result['rows'] === [];
 ?>
 <?= $this->partial('admin::partial/report-header', ['heading' => $report['title'], 'context' => $context]) ?>
 
@@ -41,15 +46,30 @@ $primary = $result['metrics'][$result['primary']];
                             'height' => $chart === 'donut' ? 300 : 280,
                             'label'  => $primary['label'] . ' by ' . strtolower($report['label']),
                             'data'   => $chart === 'donut'
-                                ? ChartData::donut($result, $primary['label'])
-                                : ChartData::bar($result, $primary['label']),
+                                ? ChartData::donut($charted, $primary['label'])
+                                : ChartData::bar($charted, $primary['label']),
                         ]) ?>
                     </div>
                 </div>
             </div>
         <?php endif ?>
 
-        <div class="<?= $chart === 'donut' && $result['rows'] !== [] ? 'col-xl-8' : 'col-12' ?>">
+        <?php if ($map) : ?>
+            <div class="col-xl-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><?= $this->escapeHtml($primary['label']) ?> <span>| on the map</span></h5>
+                        <?= $this->partial('admin::partial/world-map', [
+                            'id'    => 'report-map',
+                            'label' => $primary['label'] . ' by ' . strtolower($report['label']) . ' on a world map',
+                            'data'  => ChartData::map($all, $primary['label']),
+                        ]) ?>
+                    </div>
+                </div>
+            </div>
+        <?php endif ?>
+
+        <div class="<?= $wide ? 'col-12' : 'col-xl-8' ?>">
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">

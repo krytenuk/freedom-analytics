@@ -2,7 +2,8 @@
  * The report pages' behaviour: charts, the site and period forms, copy buttons, and the live page's updates.
  *
  * Charts are elements with data-chart="trend|donut|bar" holding their data in a JSON script tag (see
- * partial/chart.phtml), drawn with ApexCharts. Colours come from a validated categorical palette, with separate steps
+ * partial/chart.phtml), drawn with ApexCharts. World maps are elements with data-map (see partial/world-map.phtml),
+ * drawn with jsVectorMap in the colours of the donut beside them. Colours come from a validated categorical palette, with separate steps
  * for the dark theme, and the charts are drawn again when the theme changes.
  */
 (function () {
@@ -15,8 +16,11 @@
         dark: ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#0ca30c']
     };
     const OTHER = {light: '#a3a29b', dark: '#6d6c66'};
+    // Countries with no visits on the map: just off the card's surface, so they recede behind the coloured ones
+    const NONE = {light: '#e7e6e1', dark: '#2a3346'};
 
     const charts = [];
+    const maps = [];
 
     function theme() {
         return document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
@@ -157,8 +161,90 @@
         });
     }
 
+    function destroyMaps() {
+        while (maps.length) {
+            const map = maps.pop();
+            map.instance.destroy();
+            map.canvas.remove();
+        }
+    }
+
+    /**
+     * Each country in its donut slice's colour, "Other" in the neutral colour, and countries without visits barely
+     * tinted. The tooltip names the country and its value; the legend under the map gets the same colours.
+     */
+    function drawMaps() {
+        if (typeof jsVectorMap === 'undefined') {
+            return;
+        }
+        destroyMaps();
+        const mode = theme();
+        const colours = PALETTE[mode];
+        const surface = css('--bs-body-bg') || (mode === 'dark' ? '#1a2130' : '#fff');
+
+        function fill(slot) {
+            if (slot === 'none') {
+                return NONE[mode];
+            }
+            return slot === null || slot === 'other' ? OTHER[mode] : colours[Number(slot)];
+        }
+
+        document.querySelectorAll('[data-map]').forEach(function (element) {
+            const source = element.querySelector('script[type="application/json"]');
+            if (!source) {
+                return;
+            }
+            const data = JSON.parse(source.textContent);
+            const format = formatter(data.format);
+            const fills = {};
+            Object.keys(data.regions).forEach(function (code) {
+                fills[code] = fill(data.regions[code].slot);
+            });
+
+            const canvas = document.createElement('div');
+            canvas.className = 'analytics-map-canvas';
+            canvas.style.height = '100%';
+            element.appendChild(canvas);
+
+            const instance = new jsVectorMap({
+                selector: canvas,
+                map: 'world',
+                zoomOnScroll: false,
+                zoomButtons: true,
+                regionStyle: {
+                    // A hairline of the card's colour between countries, so neighbours in the same colour stay apart
+                    initial: {fill: NONE[mode], stroke: surface, strokeWidth: 0.5, fillOpacity: 1},
+                    hover: {fillOpacity: 0.75, cursor: 'default'}
+                },
+                series: {regions: [{attribute: 'fill', attributes: fills}]},
+                onRegionTooltipShow: function (event, tooltip, code) {
+                    const region = data.regions[code];
+                    tooltip.text(region
+                        ? region.label + ': ' + format(region.value) + ' ' + data.name.toLowerCase()
+                        : tooltip.text() + ': no ' + data.name.toLowerCase());
+                }
+            });
+            maps.push({instance: instance, canvas: canvas});
+        });
+
+        document.querySelectorAll('.analytics-swatch[data-slot]').forEach(function (swatch) {
+            swatch.style.background = fill(swatch.getAttribute('data-slot'));
+        });
+    }
+
+    let resizing = null;
+    window.addEventListener('resize', function () {
+        clearTimeout(resizing);
+        resizing = setTimeout(function () {
+            maps.forEach(function (map) { map.instance.updateSize(); });
+        }, 150);
+    });
+
     // Draw again in the other theme's colours when the theme changes
-    new MutationObserver(draw).observe(document.documentElement, {attributes: true, attributeFilter: ['data-bs-theme']});
+    new MutationObserver(function () {
+        draw();
+        drawMaps();
+    }).observe(document.documentElement, {attributes: true, attributeFilter: ['data-bs-theme']});
 
     // The header's site menu, and the period menu, apply as soon as they change
     document.querySelectorAll('[data-autosubmit]').forEach(function (select) {
@@ -330,9 +416,14 @@
             }, function () {});
     });
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', draw);
-    } else {
+    function drawAll() {
         draw();
+        drawMaps();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', drawAll);
+    } else {
+        drawAll();
     }
 })();

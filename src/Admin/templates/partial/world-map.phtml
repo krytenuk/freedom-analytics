@@ -1,0 +1,41 @@
+<?php
+/**
+ * A world map drawn by public/assets/js/analytics.js with jsVectorMap, colouring countries as the donut beside it
+ * colours its slices. The data, from Admin\View\ChartData::map(), is in a JSON script tag.
+ *
+ * @var Laminas\View\Renderer\PhpRenderer $this
+ * @var string $id
+ * @var string $label What the map shows, for screen readers, which get the table instead
+ * @var array{regions: array<string, array{label: string, value: int|float, slot: int|null}>, name: string, format: string} $data
+ */
+
+$this->headLink()->appendStylesheet('/assets/admin/vendor/jsvectormap/jsvectormap.min.css');
+$this->inlineScript()
+    ->appendFile('/assets/admin/vendor/jsvectormap/jsvectormap.min.js')
+    ->appendFile('/assets/admin/vendor/jsvectormap/maps/world.js');
+
+$slots = [];
+foreach ($data['regions'] as $region) {
+    if ($region['slot'] !== null) {
+        $slots[$region['slot']] = $region['label'];
+    }
+}
+ksort($slots);
+$other = in_array(null, array_column($data['regions'], 'slot'), true);
+?>
+<div class="analytics-map" id="<?= $this->escapeHtmlAttr($id) ?>" data-map role="img"
+     aria-label="<?= $this->escapeHtmlAttr($label) ?>">
+    <script type="application/json"><?= json_encode(
+        $data,
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR
+    ) ?></script>
+</div>
+<ul class="analytics-map-legend list-inline small text-body-secondary mb-0 mt-2" aria-hidden="true">
+    <?php foreach ($slots as $slot => $name) : ?>
+        <li class="list-inline-item"><span class="analytics-swatch" data-slot="<?= (int) $slot ?>"></span><?= $this->escapeHtml($name) ?></li>
+    <?php endforeach ?>
+    <?php if ($other) : ?>
+        <li class="list-inline-item"><span class="analytics-swatch" data-slot="other"></span>Other</li>
+    <?php endif ?>
+    <li class="list-inline-item"><span class="analytics-swatch" data-slot="none"></span>No visits</li>
+</ul>

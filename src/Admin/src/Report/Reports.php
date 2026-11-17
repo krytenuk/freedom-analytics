@@ -11,6 +11,7 @@ namespace Admin\Report;
  * - dimension: a key of ReportModel::DIMENSIONS
  * - chart:     "donut" for a share of the whole, "bar" for an ordered series such as hours, or null
  * - link:      "page" links rows to the page report, "host" to the referring site
+ * - map:       true for a world map beside the chart, for a dimension of two letter country codes
  */
 final class Reports
 {
@@ -29,7 +30,8 @@ final class Reports
      *     label: string,
      *     description: string,
      *     chart?: string|null,
-     *     link?: string|null
+     *     link?: string|null,
+     *     map?: bool
      * }>
      */
     public const ALL = [
@@ -41,6 +43,7 @@ final class Reports
             'label'       => 'Country',
             'description' => 'The countries visits came from.',
             'chart'       => 'donut',
+            'map'         => true,
         ],
         'languages'          => [
             'title'       => 'Languages',

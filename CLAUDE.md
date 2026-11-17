@@ -55,6 +55,9 @@ docker compose up -d               # app https://localhost:1453 (http 8090), db 
   visible and swaps in `partial/live-panel` rendered server-side (`layout => false`), so HTML is built only in PHP. A
   non-JSON reply means the session ended (redirect to login) and polling stops. `ReportModel::live()` starts every
   query from visits with recent `last_activity_at` (`idx_visits_site_activity`).
+- The Locations report (`'map' => true` in `Reports::ALL`) adds a jsVectorMap world map (`partial/world-map`, scripts
+  added by the partial). The handler fetches every country for it, and the donut uses the same rows, so each country
+  shares its slice's colour (`ChartData::map()` mirrors `donut()`'s slicing).
 - Charts follow the dataviz rules: validated palette in `analytics.js` (light and dark steps), one y-axis only,
   donuts capped at 5 slices + "Other", every chart paired with a table.
 
